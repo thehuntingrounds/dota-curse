@@ -267,28 +267,18 @@
 
   let currentAccountId = null;
 
-  // --- AUDIO SYNTHESIZER & MP3 PLAYER ---
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
-  function playFlameSound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 1.2);
-    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 1.2);
-  }
+  // --- AUDIO SEQUENCER (AXE DUNK -> WARLOCK VOICE) ---
+  function playRitualAudio() {
+    const axeAudio = new Audio('axe_ult.mp3');
+    axeAudio.volume = 1.0;
+    
+    axeAudio.play().catch(e => console.log("Axe audio blocked or missing:", e));
 
-  function playWarlockVoice() {
-    const voice = new Audio('gg1.mp3');
-    voice.volume = 0.9;
-    voice.play().catch(e => console.log("Audio play blocked or file missing:", e));
+    axeAudio.onended = () => {
+      const warlockAudio = new Audio('gg1.mp3');
+      warlockAudio.volume = 0.9;
+      warlockAudio.play().catch(e => console.log("Warlock audio blocked or missing:", e));
+    };
   }
 
   // --- EMBERS CANVAS ---
@@ -367,8 +357,7 @@
 
   // --- RITUAL LOGIC ---
   async function castHex() {
-    playFlameSound();
-    playWarlockVoice();
+    playRitualAudio();
     
     const input = document.getElementById('targetInput').value.trim();
     const resultBox = document.getElementById('resultBox');
