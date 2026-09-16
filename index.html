@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>The Ritual of the Red Card</title>
+  <title>The Ritual of the Red Card & Rank Leaderboard</title>
   
-  
+  <!-- Cursed Dota 2 Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23050203'/><rect width='92' height='92' x='4' y='4' rx='18' fill='none' stroke='%23ff1a1a' stroke-width='3' stroke-dasharray='6,4'/><path d='M22,20 L78,80 M22,20 L35,16 L78,68 Z' fill='%23d50000' stroke='%23ff5252' stroke-width='2'/><path d='M78,20 L62,35 L38,30 Z' fill='%234a0000' stroke='%23ff1a1a' stroke-width='1.5'/><path d='M22,80 L38,65 L62,70 Z' fill='%234a0000' stroke='%23ff1a1a' stroke-width='1.5'/><circle cx='50' cy='50' r='9' fill='%23000' stroke='%23ff0000' stroke-width='2'/><circle cx='50' cy='50' r='4' fill='%23ff5252'/></svg>">
   
   <!-- Anti-Caching Meta Tags -->
@@ -15,18 +15,34 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?v=1.0.3"></script>
   
   <style>
+    :root {
+      --rank-immortal: #ff4d4d;
+      --rank-divine: #b052ff;
+      --rank-ancient: #3d7eff;
+      --rank-legend: #00d285;
+      --rank-archon: #00d8d8;
+      --rank-crusader: #f1c40f;
+      --rank-guardian: #95a5a6;
+      --rank-herald: #7f8c8d;
+    }
+
     body {
       background-color: #050608;
       color: #ccc;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
       min-height: 100vh;
       margin: 0;
       padding: 20px;
       box-sizing: border-box;
       overflow-x: hidden;
+      transition: background-color 0.4s ease;
+    }
+
+    body.rank-mode {
+      background-color: #0d0f17;
     }
 
     #emberCanvas {
@@ -37,8 +53,55 @@
       height: 100vh;
       z-index: 0;
       pointer-events: none;
+      transition: opacity 0.4s ease;
     }
 
+    /* Tab Controls */
+    .nav-tabs {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      max-width: 1200px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px;
+      background: #121420;
+      border: 1px solid #2b3147;
+      color: #7a829e;
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn:hover {
+      filter: brightness(1.2);
+    }
+
+    .tab-btn.active-cursed {
+      background: linear-gradient(180deg, #3d1414 0%, #170707 100%);
+      color: #ff4d4d;
+      border-color: #ff3333;
+      box-shadow: 0 0 15px rgba(255, 30, 0, 0.3);
+    }
+
+    .tab-btn.active-rank {
+      background: linear-gradient(180deg, #252b40 0%, #191d2c 100%);
+      color: #f39c12;
+      border-color: #f39c12;
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.3);
+    }
+
+    /* Main Container Views */
     .wrapper {
       position: relative;
       z-index: 1;
@@ -47,6 +110,16 @@
       gap: 20px;
       max-width: 1200px;
       width: 100%;
+    }
+
+    .rank-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     @media (max-width: 900px) {
@@ -61,6 +134,12 @@
       border-radius: 12px;
       display: flex;
       flex-direction: column;
+    }
+
+    .rank-panel {
+      background: linear-gradient(180deg, #161926 0%, #10121d 100%);
+      border: 1px solid #2b3147;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     .flaming-panel {
@@ -130,6 +209,11 @@
       box-sizing: border-box;
     }
 
+    .rank-input {
+      background: #0c0e17 !important;
+      border-color: #2b3147 !important;
+    }
+
     input:focus, textarea:focus {
       border-color: #e53935;
       box-shadow: 0 0 10px rgba(229, 57, 53, 0.5);
@@ -153,6 +237,15 @@
     button:hover {
       background: linear-gradient(180deg, #f44336 0%, #b71c1c 100%);
       box-shadow: 0 0 15px rgba(244, 67, 54, 0.8);
+    }
+
+    .btn-rank {
+      background: linear-gradient(180deg, #d35400 0%, #a04000 100%) !important;
+    }
+
+    .btn-rank:hover {
+      background: linear-gradient(180deg, #e67e22 0%, #d35400 100%) !important;
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.6) !important;
     }
 
     .btn-secondary {
@@ -224,30 +317,12 @@
     }
 
     @keyframes rgbBorder {
-      0% {
-        border-color: #ff0000;
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
-      }
-      20% {
-        border-color: #ff8800;
-        box-shadow: 0 0 15px rgba(255, 136, 0, 0.8);
-      }
-      40% {
-        border-color: #ffff00;
-        box-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
-      }
-      60% {
-        border-color: #00ff00;
-        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
-      }
-      80% {
-        border-color: #00ffff;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
-      }
-      100% {
-        border-color: #ff00ff;
-        box-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
-      }
+      0% { border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); }
+      20% { border-color: #ff8800; box-shadow: 0 0 15px rgba(255, 136, 0, 0.8); }
+      40% { border-color: #ffff00; box-shadow: 0 0 15px rgba(255, 255, 0, 0.8); }
+      60% { border-color: #00ff00; box-shadow: 0 0 15px rgba(0, 255, 0, 0.8); }
+      80% { border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.8); }
+      100% { border-color: #ff00ff; box-shadow: 0 0 15px rgba(255, 0, 255, 0.8); }
     }
 
     .soul-avatar {
@@ -295,6 +370,108 @@
       filter: brightness(1.15);
     }
 
+    /* Rank Leaderboard Components */
+    .distribution-section {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid #2b3147;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+
+    .graph-title {
+      font-size: 10px;
+      color: #8c96b5;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .graph-bar {
+      display: flex;
+      height: 14px;
+      border-radius: 7px;
+      overflow: hidden;
+      background: #090a10;
+    }
+
+    .graph-segment {
+      height: 100%;
+      transition: width 0.3s;
+    }
+
+    .graph-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 9px;
+      color: #a0aabf;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .rank-card {
+      background: #1a1e2e;
+      border: 1px solid #2b3147;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.15s;
+    }
+
+    .rank-card:hover {
+      transform: translateX(4px);
+    }
+
+    .podium-1 {
+      border-color: rgba(255, 77, 77, 0.5);
+      background: linear-gradient(90deg, #251822 0%, #1a1e2e 100%);
+      box-shadow: 0 0 12px rgba(255, 77, 77, 0.15);
+    }
+
+    .medal-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .trend-indicator {
+      text-align: right;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .trend-up { color: #00e676; }
+    .trend-down { color: #ff5252; }
+    .trend-none { color: #606b8c; }
+
+    .trend-subtext {
+      font-size: 9px;
+      color: #727d9c;
+      font-weight: normal;
+      margin-top: 2px;
+    }
+
     /* Modal Overlay Base Styling */
     .modal-overlay {
       position: fixed;
@@ -309,14 +486,8 @@
       align-items: center;
     }
 
-    /* Strict Z-Index Stack Order */
-    #allMatchesModal {
-      z-index: 1000 !important;
-    }
-
-    #commentModal {
-      z-index: 99999 !important; /* Forces comment modal to always sit on top */
-    }
+    #allMatchesModal { z-index: 1000 !important; }
+    #commentModal { z-index: 99999 !important; }
 
     .modal-content {
       background: #0b0c10;
@@ -340,9 +511,7 @@
       font-weight: bold;
     }
 
-    .modal-close:hover {
-      color: #ff5252;
-    }
+    .modal-close:hover { color: #ff5252; }
 
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-thumb { background: #8e0000; border-radius: 3px; }
@@ -353,7 +522,14 @@
 
 <canvas id="emberCanvas"></canvas>
 
-<div class="wrapper">
+<!-- Top Navigation Mode Selector -->
+<div class="nav-tabs">
+  <div id="tabCursed" class="tab-btn active-cursed" onclick="switchView('cursed')">🩸 Cursed Souls Ritual</div>
+  <div id="tabRank" class="tab-btn" onclick="switchView('rank')">🏆 Competitive Rank Leaderboard</div>
+</div>
+
+<!-- VIEW 1: CURSED SOULS (Ritual View) -->
+<div id="cursedView" class="wrapper">
   <!-- Left Panel: Chant Wall -->
   <div class="panel">
     <div class="panel-title">📜 DARK CHANT WALL 📜</div>
@@ -401,7 +577,38 @@
   </div>
 </div>
 
-<!-- Modal 1: Individual Match Comments (Z-INDEX 99999) -->
+<!-- VIEW 2: DEDICATED RANK LEADERBOARD VIEW -->
+<div id="rankView" class="rank-wrapper" style="display: none;">
+  <div class="panel rank-panel">
+    <div style="font-size: 18px; color: #f39c12; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; margin-bottom: 15px;">
+      🏆 Global Dota 2 Rank Leaderboard
+    </div>
+
+    <!-- Rank Distribution Chart -->
+    <div class="distribution-section">
+      <div class="graph-title">Community Rank Spread</div>
+      <div id="rankGraphBar" class="graph-bar">
+        <!-- Dynamic Segments -->
+      </div>
+      <div id="rankGraphLegend" class="graph-legend">
+        <!-- Dynamic Legend -->
+      </div>
+    </div>
+
+    <!-- Add/Update Player for Rank Tracking -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <input type="text" id="rankPlayerInput" class="rank-input" placeholder="Enter Steam Account ID to Track Rank..." oninput="cleanInput(this)">
+      <button id="trackRankBtn" class="btn-rank" style="width: auto; padding: 0 20px;" onclick="trackRankPlayer()">Track Rank</button>
+    </div>
+
+    <!-- List of Tracked Rank Players -->
+    <div id="rankLeaderboardList" style="display: flex; flex-direction: column; gap: 10px;">
+      <p style="color: #666; font-size: 11px; text-align: center;">Loading competitive ladder...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Individual Match Comments -->
 <div id="commentModal" class="modal-overlay" style="display: none;">
   <div class="modal-content">
     <span class="modal-close" onclick="closeMatchModal()">&times;</span>
@@ -418,7 +625,7 @@
   </div>
 </div>
 
-<!-- Modal 2: View All Recent Matches (Z-INDEX 1000) -->
+<!-- Modal 2: View All Recent Matches -->
 <div id="allMatchesModal" class="modal-overlay" style="display: none;">
   <div class="modal-content" style="max-width: 600px;">
     <span class="modal-close" onclick="closeAllMatchesModal()">&times;</span>
@@ -441,6 +648,64 @@
   let activeMatchId = null;
   let heroDict = {};
   let globalAllMatches = [];
+
+  // Helper function for Rank Tier formatting
+  function getRankBadgeInfo(tier) {
+    if (!tier || tier === 0) return { name: "Unranked", color: "#7f8c8d" };
+    if (tier === 80) return { name: "Immortal 🏆", color: "#ff4d4d" };
+
+    const medals = ["", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine"];
+    const colors = ["", "#7f8c8d", "#95a5a6", "#f1c40f", "#00d8d8", "#00d285", "#3d7eff", "#b052ff"];
+    const idx = Math.floor(tier / 10);
+    const star = tier % 10;
+
+    return {
+      name: `${medals[idx] || 'Unknown'} ⭐${star}`,
+      color: colors[idx] || '#ccc'
+    };
+  }
+
+  function getRankDeltaBadge(current, previous) {
+    if (!previous || current === previous) {
+      return `<div class="trend-indicator trend-none">⚪ No Change<div class="trend-subtext">stable</div></div>`;
+    }
+    if (previous === 0 && current > 0) {
+      return `<div class="trend-indicator" style="color:#00d8d8;">✨ Calibrated<div class="trend-subtext">new calibration</div></div>`;
+    }
+
+    const diff = current - previous;
+    if (diff > 0) {
+      return `<div class="trend-indicator trend-up">🟢 +${diff} Star${diff > 1 ? 's' : ''}<div class="trend-subtext">ranked up</div></div>`;
+    } else {
+      return `<div class="trend-indicator trend-down">🔴 ${diff} Star${Math.abs(diff) > 1 ? 's' : ''}<div class="trend-subtext">de-ranked</div></div>`;
+    }
+  }
+
+  function switchView(viewMode) {
+    const cursedView = document.getElementById('cursedView');
+    const rankView = document.getElementById('rankView');
+    const tabCursed = document.getElementById('tabCursed');
+    const tabRank = document.getElementById('tabRank');
+    const emberCanvas = document.getElementById('emberCanvas');
+
+    if (viewMode === 'rank') {
+      cursedView.style.display = 'none';
+      rankView.style.display = 'flex';
+      tabCursed.className = 'tab-btn';
+      tabRank.className = 'tab-btn active-rank';
+      document.body.className = 'rank-mode';
+      emberCanvas.style.opacity = '0.15';
+      fetchRankLeaderboard();
+    } else {
+      rankView.style.display = 'none';
+      cursedView.style.display = 'grid';
+      tabRank.className = 'tab-btn';
+      tabCursed.className = 'tab-btn active-cursed';
+      document.body.className = '';
+      emberCanvas.style.opacity = '1.0';
+      fetchCursedSouls();
+    }
+  }
 
   async function loadHeroDict() {
     try {
@@ -562,11 +827,19 @@
 
       const personaName = playerData.profile.personaname;
       const avatarUrl = playerData.profile.avatarfull || '';
+      const currentRank = playerData.rank_tier || 0;
 
       const wlRes = await fetch(`https://api.opendota.com/api/players/${currentAccountId}/wl`);
       const wlData = await wlRes.json();
 
-      await db.from('cursed_players').insert([{ account_id: currentAccountId, persona_name: personaName, avatar_url: avatarUrl }]);
+      await db.from('cursed_players').insert([{ 
+        account_id: currentAccountId, 
+        persona_name: personaName, 
+        avatar_url: avatarUrl,
+        rank_tier: currentRank,
+        previous_rank_tier: currentRank
+      }]);
+
       fetchCursedSouls();
       fetchCurseMatchFeed();
 
@@ -595,6 +868,150 @@
     btn.disabled = false;
   }
 
+  async function trackRankPlayer() {
+    const input = document.getElementById('rankPlayerInput').value.trim();
+    const btn = document.getElementById('trackRankBtn');
+    if (!input) { alert("Please enter a numeric Steam Account ID!"); return; }
+
+    btn.innerText = "TRACKING...";
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`https://api.opendota.com/api/players/${input}`);
+      const playerData = await res.json();
+
+      if (!playerData || !playerData.profile) {
+        alert("Account ID not found!");
+        btn.innerText = "TRACK RANK";
+        btn.disabled = false;
+        return;
+      }
+
+      const currentRank = playerData.rank_tier || 0;
+      const { data: existing } = await db.from('cursed_players').select('*').eq('account_id', input).single();
+
+      if (existing) {
+        const prevRank = (existing.rank_tier !== currentRank) ? existing.rank_tier : existing.previous_rank_tier;
+        await db.from('cursed_players').update({
+          persona_name: playerData.profile.personaname,
+          avatar_url: playerData.profile.avatarfull,
+          rank_tier: currentRank,
+          previous_rank_tier: prevRank,
+          tracked_for_rank: true,
+          last_rank_updated_at: new Date()
+        }).eq('account_id', input);
+      } else {
+        await db.from('cursed_players').insert([{
+          account_id: input,
+          persona_name: playerData.profile.personaname,
+          avatar_url: playerData.profile.avatarfull,
+          rank_tier: currentRank,
+          previous_rank_tier: currentRank,
+          tracked_for_rank: true
+        }]);
+      }
+
+      document.getElementById('rankPlayerInput').value = '';
+      fetchRankLeaderboard();
+    } catch (e) {
+      alert("Error adding player for rank tracking.");
+    }
+
+    btn.innerText = "TRACK RANK";
+    btn.disabled = false;
+  }
+
+  async function fetchRankLeaderboard() {
+    const list = document.getElementById('rankLeaderboardList');
+    const { data: players } = await db.from('cursed_players').select('*').or('tracked_for_rank.eq.true,rank_tier.gt.0');
+
+    if (!players || players.length === 0) {
+      list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No ranked players being tracked yet. Submit an ID above!</p>';
+      renderRankGraph([]);
+      return;
+    }
+
+    // Deduplicate by account_id and take highest tier
+    const playerMap = new Map();
+    players.forEach(p => {
+      if (!playerMap.has(p.account_id) || p.rank_tier > playerMap.get(p.account_id).rank_tier) {
+        playerMap.set(p.account_id, p);
+      }
+    });
+
+    const uniquePlayers = Array.from(playerMap.values());
+    uniquePlayers.sort((a, b) => (b.rank_tier || 0) - (a.rank_tier || 0));
+
+    renderRankGraph(uniquePlayers);
+
+    let html = '';
+    uniquePlayers.forEach((p, index) => {
+      const isFirst = index === 0;
+      const badgeInfo = getRankBadgeInfo(p.rank_tier);
+      const podiumClass = isFirst ? 'podium-1' : '';
+
+      html += `
+        <div class="rank-card ${podiumClass}">
+          <div style="font-size:14px; font-weight:bold; color:${isFirst ? '#f39c12' : '#5d678a'}; width:28px;">#${index + 1}</div>
+          <div style="display:flex; align-items:center; gap:12px; flex:1;">
+            <img src="${p.avatar_url}" style="width:38px; height:38px; border-radius:6px; border:1px solid #2b3147;">
+            <div>
+              <div style="font-size:13px; font-weight:bold; color:#fff;">${p.persona_name}</div>
+              <span class="medal-badge" style="background:${badgeInfo.color}22; color:${badgeInfo.color}; border:1px solid ${badgeInfo.color};">
+                ${badgeInfo.name}
+              </span>
+            </div>
+          </div>
+          ${getRankDeltaBadge(p.rank_tier, p.previous_rank_tier)}
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
+  }
+
+  function renderRankGraph(players) {
+    const bar = document.getElementById('rankGraphBar');
+    const legend = document.getElementById('rankGraphLegend');
+
+    if (!players || players.length === 0) {
+      bar.innerHTML = '<div style="width:100%; background:#222;"></div>';
+      legend.innerHTML = '<span>No data available</span>';
+      return;
+    }
+
+    const counts = { Immortal: 0, Divine: 0, Ancient: 0, Legend: 0, Archon: 0, Crusader: 0, Guardian: 0, Herald: 0, Unranked: 0 };
+    const colors = { Immortal: '#ff4d4d', Divine: '#b052ff', Ancient: '#3d7eff', Legend: '#00d285', Archon: '#00d8d8', Crusader: '#f1c40f', Guardian: '#95a5a6', Herald: '#7f8c8d', Unranked: '#444' };
+
+    players.forEach(p => {
+      const tier = p.rank_tier || 0;
+      if (tier === 80) counts.Immortal++;
+      else if (tier >= 71) counts.Divine++;
+      else if (tier >= 61) counts.Ancient++;
+      else if (tier >= 51) counts.Legend++;
+      else if (tier >= 41) counts.Archon++;
+      else if (tier >= 31) counts.Crusader++;
+      else if (tier >= 21) counts.Guardian++;
+      else if (tier >= 11) counts.Herald++;
+      else counts.Unranked++;
+    });
+
+    const total = players.length;
+    let barHtml = '', legendHtml = '';
+
+    Object.keys(counts).forEach(key => {
+      const count = counts[key];
+      if (count > 0) {
+        const pct = Math.round((count / total) * 100);
+        barHtml += `<div class="graph-segment" style="width:${pct}%; background:${colors[key]};" title="${key}: ${pct}%"></div>`;
+        legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${colors[key]};"></div> ${key} (${pct}%)</div>`;
+      }
+    });
+
+    bar.innerHTML = barHtml;
+    legend.innerHTML = legendHtml;
+  }
+
   function toggleFeed(showFeed) {
     const feedBox = document.getElementById('feedBox');
     feedBox.style.display = showFeed ? 'block' : 'none';
@@ -610,7 +1027,6 @@
     const isRadiant = match.player_slot < 128;
     const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
 
-    /* Match Won = Red (#f44336), Match Lost = Green (#4caf50) */
     const statusColor = isWin ? '#f44336' : '#4caf50';
     const statusText = isWin ? 'MATCH WON' : 'MATCH LOST';
     const statusIcon = isWin ? '⚔️' : '💀';
