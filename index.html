@@ -267,8 +267,9 @@
 
   let currentAccountId = null;
 
-  // --- AUDIO SYNTHESIZER ---
+  // --- AUDIO SYNTHESIZER & MP3 PLAYER ---
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
   function playFlameSound() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
@@ -282,6 +283,12 @@
     gain.connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + 1.2);
+  }
+
+  function playWarlockVoice() {
+    const voice = new Audio('gg1.mp3');
+    voice.volume = 0.9;
+    voice.play().catch(e => console.log("Audio play blocked or file missing:", e));
   }
 
   // --- EMBERS CANVAS ---
@@ -361,6 +368,8 @@
   // --- RITUAL LOGIC ---
   async function castHex() {
     playFlameSound();
+    playWarlockVoice();
+    
     const input = document.getElementById('targetInput').value.trim();
     const resultBox = document.getElementById('resultBox');
     const btn = document.getElementById('hexBtn');
