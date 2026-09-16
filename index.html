@@ -665,19 +665,17 @@
     };
   }
 
-  function getRankDeltaBadge(current, previous) {
-    if (!previous || current === previous) {
-      return `<div class="trend-indicator trend-none">⚪ No Change<div class="trend-subtext">stable</div></div>`;
+ function getRankDeltaBadge(currentRank, previousRank) {
+    if (!previousRank || previousRank === 0 || currentRank === previousRank) {
+      return '<span style="color: #888; font-size: 11px;">No Change</span>';
     }
-    if (previous === 0 && current > 0) {
-      return `<div class="trend-indicator" style="color:#00d8d8;">✨ Calibrated<div class="trend-subtext">new calibration</div></div>`;
-    }
-
-    const diff = current - previous;
+    
+    const diff = currentRank - previousRank;
+    
     if (diff > 0) {
-      return `<div class="trend-indicator trend-up">🟢 +${diff} Star${diff > 1 ? 's' : ''}<div class="trend-subtext">ranked up</div></div>`;
+      return `<span style="color: #2ecc71; font-size: 11px; font-weight: bold;">+${diff} Tiers</span>`;
     } else {
-      return `<div class="trend-indicator trend-down">🔴 ${diff} Star${Math.abs(diff) > 1 ? 's' : ''}<div class="trend-subtext">de-ranked</div></div>`;
+      return `<span style="color: #e74c3c; font-size: 11px; font-weight: bold;">${diff} Tiers</span>`;
     }
   }
 
