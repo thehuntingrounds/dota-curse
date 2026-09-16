@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Ritual of the Red Card</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      background-color: #050608;
+      color: #ccc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    #emberCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 3-Column Responsive Layout */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr 320px;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .wrapper { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: linear-gradient(180deg, #12151b 0%, #0a0b0e 100%);
+      border: 1px solid #3d1414;
+      box-shadow: 0 0 25px rgba(180, 20, 20, 0.25);
+      padding: 20px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* FLAMING RIGHT SIDEBAR */
+    .flaming-panel {
+      border: 1px solid #ff3333;
+      box-shadow: 0 0 30px rgba(255, 30, 0, 0.4), inset 0 0 15px rgba(255, 60, 0, 0.2);
+      animation: flameGlow 2.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes flameGlow {
+      0% { box-shadow: 0 0 20px rgba(255, 30, 0, 0.3), inset 0 0 10px rgba(255, 0, 0, 0.2); }
+      100% { box-shadow: 0 0 45px rgba(255, 70, 0, 0.7), inset 0 0 20px rgba(255, 80, 0, 0.4); }
+    }
+
+    h1 {
+      color: #e53935;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(229, 57, 53, 0.8);
+    }
+
+    .panel-title {
+      color: #ff3333;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+      text-align: center;
+      border-bottom: 1px solid #331010;
+      padding-bottom: 8px;
+      text-shadow: 0 0 8px #ff0000;
+    }
+
+    .intro {
+      font-size: 12px;
+      color: #9e9e9e;
+      line-height: 1.5;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #2a1010;
+      padding-bottom: 12px;
+      text-align: center;
+    }
+
+    label {
+      font-size: 11px;
+      color: #d32f2f;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 9px;
+      background: #040507;
+      border: 1px solid #521818;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #e53935;
+      box-shadow: 0 0 10px rgba(229, 57, 53, 0.5);
+    }
+
+    button {
+      margin-top: 8px;
+      background: linear-gradient(180deg, #b71c1c 0%, #7f0000 100%);
+      color: #ffffff;
+      border: none;
+      padding: 10px 15px;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 6px;
+      text-transform: uppercase;
+      width: 100%;
+    }
+
+    button:hover {
+      background: linear-gradient(180deg, #f44336 0%, #b71c1c 100%);
+      box-shadow: 0 0 15px rgba(244, 67, 54, 0.8);
+    }
+
+    /* Comment Section Styling */
+    .comment-list {
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      padding-right: 4px;
+    }
+
+    .comment-card {
+      background: #080303;
+      border: 1px solid #2d0b0b;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .comment-user {
+      color: #ff5252;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .comment-text {
+      color: #bbb;
+      word-break: break-word;
+    }
+
+    /* Soul Leaderboard Styling */
+    .soul-list {
+      max-height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .soul-card {
+      background: #0e0404;
+      border: 1px solid #4a1212;
+      padding: 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .soul-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      border: 1px solid #8e0000;
+    }
+
+    .hex-badge {
+      background: linear-gradient(180deg, #600 0%, #200 100%);
+      border: 1px solid #ff4d4d;
+      color: #ff6666;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #8e0000; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<canvas id="emberCanvas"></canvas>
+
+<div class="wrapper">
+  <!-- LEFT: ANONYMOUS CHANT WALL (COMMENTS) -->
+  <div class="panel">
+    <div class="panel-title">📜 DARK CHANT WALL 📜</div>
+    
+    <input type="text" id="commentUser" placeholder="Your Handle (Optional)" maxlength="20" style="margin-bottom: 6px;">
+    <textarea id="commentMsg" placeholder="Inscribe your curse or chant..." rows="3" style="resize: none;"></textarea>
+    <button onclick="postComment()">Inscribe Chant</button>
+
+    <div id="commentList" class="comment-list">
+      <p style="color: #666; font-size: 11px; text-align: center;">Fetching chants...</p>
+    </div>
+  </div>
+
+  <!-- MIDDLE: MAIN RITUAL PANEL -->
+  <div class="panel">
+    <h1>The Hex of the Ancient</h1>
+    <div class="intro">
+      <p>May the Ancients turn their backs upon the chosen foolish soul. By invoking this dark rite, you seal their matchmaking fate into eternal torment—destining their queue to endless red match histories.</p>
+    </div>
+
+    <label for="targetInput">Enter Numeric Steam Account ID</label>
+    <input type="text" id="targetInput" placeholder="Numbers only (e.g. 118471138)" oninput="cleanInput(this)" style="text-align: center;">
+    <button id="hexBtn" onclick="castHex()">Begin the Ritual</button>
+
+    <div id="resultBox" style="display:none; margin-top:15px; padding:12px; background:#050507; border:1px solid #8e0000; border-radius:8px;"></div>
+  </div>
+
+  <!-- RIGHT: FLAMING LEADERBOARD -->
+  <div class="panel flaming-panel">
+    <div class="panel-title">🔥 MOST CURSED SOULS 🔥</div>
+    <div id="soulList" class="soul-list">
+      <p style="color: #666; font-size: 11px; text-align: center;">Reading grimoire...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://vojxzhehhlxnhsliyihv.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Kh6OsEPkklRaJcGCuBGfbQ_gOIVleLf';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentAccountId = null;
+
+  // --- AUDIO SYNTHESIZER ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playFlameSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1.2);
+  }
+
+  // --- EMBERS CANVAS ---
+  const canvas = document.getElementById('emberCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2.5 + 1,
+      speedY: Math.random() * 1.2 + 0.3,
+      speedX: (Math.random() - 0.5) * 0.5,
+      opacity: Math.random() * 0.8 + 0.2
+    });
+  }
+
+  function animateEmbers() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.y -= p.speedY;
+      p.x += p.speedX;
+      if (p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
+      ctx.fillStyle = `rgba(255, ${Math.floor(Math.random() * 100)}, 0, ${p.opacity})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    requestAnimationFrame(animateEmbers);
+  }
+  animateEmbers();
+
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchCursedSouls();
+    fetchComments();
+  });
+
+  function cleanInput(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
+
+  // --- COMMENTS LOGIC ---
+  async function postComment() {
+    const user = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
+    const msg = document.getElementById('commentMsg').value.trim();
+
+    if (!msg) { alert("Inscribe a message before submitting!"); return; }
+
+    await db.from('curse_comments').insert([{ username: user, message: msg }]);
+    document.getElementById('commentMsg').value = '';
+    fetchComments();
+  }
+
+  async function fetchComments() {
+    const box = document.getElementById('commentList');
+    const { data } = await db.from('curse_comments').select('*').order('created_at', { ascending: false }).limit(15);
+    
+    if (!data || data.length === 0) {
+      box.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No chants yet. Be the first!</p>';
+      return;
+    }
+
+    let html = '';
+    data.forEach(c => {
+      html += `
+        <div class="comment-card">
+          <div class="comment-user">☠️ ${c.username}</div>
+          <div class="comment-text">${c.message}</div>
+        </div>
+      `;
+    });
+    box.innerHTML = html;
+  }
+
+  // --- RITUAL LOGIC ---
+  async function castHex() {
+    playFlameSound();
+    const input = document.getElementById('targetInput').value.trim();
+    const resultBox = document.getElementById('resultBox');
+    const btn = document.getElementById('hexBtn');
+
+    if (!input) { alert("Please enter a valid numeric Steam Account ID!"); return; }
+
+    btn.innerText = "COMMUNING WITH ANCIENTS...";
+    btn.disabled = true;
+    currentAccountId = input;
+
+    try {
+      const playerRes = await fetch(`https://api.opendota.com/api/players/${currentAccountId}`);
+      const playerData = await playerRes.json();
+      
+      if (!playerData || !playerData.profile) {
+        alert("Account ID not found on Valve Network!");
+        btn.innerText = "BEGIN THE RITUAL";
+        btn.disabled = false;
+        return;
+      }
+
+      const personaName = playerData.profile.personaname;
+      const avatarUrl = playerData.profile.avatarfull || '';
+
+      const wlRes = await fetch(`https://api.opendota.com/api/players/${currentAccountId}/wl`);
+      const wlData = await wlRes.json();
+
+      await db.from('cursed_players').insert([{ account_id: currentAccountId, persona_name: personaName, avatar_url: avatarUrl }]);
+      fetchCursedSouls();
+
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <div style="color:#ff5252; font-weight:bold; text-align:center; font-size:13px; margin-bottom:8px;">☠️ RITUAL COMPLETE: CURSE SEATED ☠️</div>
+        <div style="display:flex; align-items:center; gap:10px; background:#0d0f14; padding:8px; border-radius:6px;">
+          <img src="${avatarUrl}" style="width:40px; height:40px; border-radius:4px; border:1px solid #e53935;">
+          <div>
+            <strong style="color:#fff; font-size:14px;">${personaName}</strong>
+            <div style="font-size:11px; color:#888;">Career W/L: <span style="color:#4caf50;">${wlData.win || 0}W</span> - <span style="color:#f44336;">${wlData.lose || 0}L</span></div>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      alert("Error contacting database.");
+    }
+
+    btn.innerText = "BEGIN THE RITUAL";
+    btn.disabled = false;
+  }
+
+  // --- LEADERBOARD LOGIC ---
+  async function fetchCursedSouls() {
+    const soulList = document.getElementById('soulList');
+    const { data } = await db.from('cursed_players').select('*');
+    if (!data || data.length === 0) {
+      soulList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No players hexed yet.</p>';
+      return;
+    }
+
+    const counts = {}, profiles = {};
+    data.forEach(p => {
+      counts[p.account_id] = (counts[p.account_id] || 0) + 1;
+      profiles[p.account_id] = p;
+    });
+
+    const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+    let html = '';
+    sortedIds.forEach((id, index) => {
+      const p = profiles[id];
+      const rank = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      html += `
+        <div class="soul-card">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="color:#888; font-size:11px; font-weight:bold;">${rank}</span>
+            <img class="soul-avatar" src="${p.avatar_url}">
+            <div>
+              <strong style="color:#eee; font-size:11px;">${p.persona_name}</strong>
+              <div style="color:#666; font-size:9px;">ID: ${p.account_id}</div>
+            </div>
+          </div>
+          <div class="hex-badge">🔥 ${counts[id]}x</div>
+        </div>
+      `;
+    });
+    soulList.innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
