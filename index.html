@@ -222,17 +222,71 @@
       border-radius: 10px;
     }
 
+    /* Fixed Match Feed Scroll Container */
     .feed-container {
-      max-height: 280px;
+      max-height: 320px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
+      padding-right: 4px;
     }
 
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #8e0000; border-radius: 2px; }
+    .match-item {
+      border-radius: 6px;
+      background: #080303;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .match-item:hover {
+      filter: brightness(1.15);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #0b0c10;
+      border: 1px solid #e53935;
+      box-shadow: 0 0 30px rgba(229, 57, 53, 0.5);
+      border-radius: 10px;
+      width: 90%;
+      max-width: 480px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      color: #888;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .modal-close:hover {
+      color: #ff5252;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #8e0000; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: #050608; }
   </style>
 </head>
 <body>
@@ -280,12 +334,30 @@
   </div>
 </div>
 
+<!-- Match Comments Overlay Modal -->
+<div id="commentModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeMatchModal()">&times;</span>
+    <div id="modalHeader" style="margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px;"></div>
+    
+    <div id="modalCommentsList" style="max-height: 200px; overflow-y: auto; font-size: 11px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+      <span style="color: #555;">Loading chants...</span>
+    </div>
+
+    <div style="display: flex; gap: 6px;">
+      <input type="text" id="modalInput" placeholder="Leave a match chant..." style="flex: 1; padding: 6px 10px; font-size: 11px;">
+      <button onclick="submitModalComment()" style="width: auto; padding: 6px 14px; margin: 0; font-size: 10px;">Send</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SUPABASE_URL = 'https://vojxzhehhlxnhsliyihv.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_Kh6OsEPkklRaJcGCuBGfbQ_gOIVleLf';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let currentAccountId = null;
+  let activeMatchId = null;
   let heroDict = {};
 
   async function loadHeroDict() {
@@ -462,103 +534,127 @@
     }
 
     const uniquePlayers = [...new Map(cursedPlayers.map(p => [p.account_id, p])).values()];
-    let html = '';
+    let allMatches = [];
 
-    for (const player of uniquePlayers.slice(0, 6)) {
+    await Promise.all(uniquePlayers.map(async (player) => {
       try {
         const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/recentMatches`);
         const matches = await res.json();
-
-        if (matches && matches.length > 0) {
-          const lastMatch = matches[0];
-          const isRadiant = lastMatch.player_slot < 128;
-          const isWin = (isRadiant && lastMatch.radiant_win) || (!isRadiant && !lastMatch.radiant_win);
-
-          const statusColor = isWin ? '#4caf50' : '#f44336';
-          const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
-          const statusIcon = isWin ? '🛡️' : '☠️';
-
-          const heroData = heroDict[lastMatch.hero_id];
-          const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
-          const matchDate = new Date(lastMatch.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-          html += `
-            <div style="border:1px solid ${statusColor}44; margin-bottom:8px; border-radius:6px; background:#080303; overflow:hidden;">
-              <div onclick="toggleMatchDrawer('${lastMatch.match_id}')" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; cursor:pointer;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0;">
-                  ${heroImg ? `<img src="${heroImg}" style="width:36px; height:20px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
-                  <div>
-                    <strong style="color:#eee; font-size:11px;">${player.persona_name}</strong>
-                    <div style="color:#777; font-size:9px;">KDA: ${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists} • ${matchDate}</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
-                  <div style="color:#555; font-size:8px;">Click to view 💬</div>
-                </div>
-              </div>
-
-              <div id="match-drawer-${lastMatch.match_id}" style="display:none; padding:10px; border-top:1px solid #222; background:#030101;">
-                <div style="font-size:10px; color:#aaa; margin-bottom:6px; display:flex; justify-content:space-between;">
-                  <span>Match ID: <a href="https://www.dotabuff.com/matches/${lastMatch.match_id}" target="_blank" style="color:#ff5252; text-decoration:none;">#${lastMatch.match_id}</a></span>
-                  <span style="color:#666;">Hero: ${heroData?.localized_name || 'Unknown'}</span>
-                </div>
-
-                <div id="match-comments-${lastMatch.match_id}" style="max-height:90px; overflow-y:auto; font-size:10px; margin-bottom:8px; display:flex; flex-direction:column; gap:4px;">
-                  <span style="color:#555;">Loading match chants...</span>
-                </div>
-
-                <div style="display:flex; gap:6px;">
-                  <input type="text" id="match-input-${lastMatch.match_id}" placeholder="Leave a curse comment..." style="flex:1; padding:4px 8px; font-size:10px;">
-                  <button onclick="postMatchComment('${lastMatch.match_id}')" style="width:auto; padding:4px 10px; margin:0; font-size:9px;">Send</button>
-                </div>
-              </div>
-            </div>
-          `;
+        if (matches && Array.isArray(matches)) {
+          matches.forEach(m => {
+            allMatches.push({
+              ...m,
+              player_name: player.persona_name,
+              player_avatar: player.avatar_url,
+              player_id: player.account_id
+            });
+          });
         }
       } catch (e) {}
-    }
+    }));
 
-    feedList.innerHTML = html || '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
-  }
-
-  async function toggleMatchDrawer(matchId) {
-    const drawer = document.getElementById(`match-drawer-${matchId}`);
-    const isHidden = drawer.style.display === 'none';
-    drawer.style.display = isHidden ? 'block' : 'none';
-
-    if (isHidden) {
-      fetchMatchComments(matchId);
-    }
-  }
-
-  async function fetchMatchComments(matchId) {
-    const container = document.getElementById(`match-comments-${matchId}`);
-    const { data: comments } = await db.from('match_comments').select('*').eq('match_id', String(matchId)).order('created_at', { ascending: true });
-
-    if (!comments || comments.length === 0) {
-      container.innerHTML = `<span style="color:#555; font-style:italic;">No comments on this match yet.</span>`;
+    if (allMatches.length === 0) {
+      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
       return;
     }
 
-    container.innerHTML = comments.map(c => `
-      <div style="background:#0e0404; padding:3px 6px; border-radius:3px; border-left:2px solid #8e0000; color:#ccc;">
+    // Sort strictly by most recent date/time across all players
+    allMatches.sort((a, b) => b.start_time - a.start_time);
+
+    let html = '';
+    // Pull top 20 matches overall
+    for (const match of allMatches.slice(0, 20)) {
+      const isRadiant = match.player_slot < 128;
+      const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
+
+      const statusColor = isWin ? '#4caf50' : '#f44336';
+      const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
+      const statusIcon = isWin ? '🛡️' : '☠️';
+
+      const heroData = heroDict[match.hero_id];
+      const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
+      const matchDate = new Date(match.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      const escapedPlayerName = match.player_name.replace(/'/g, "\\'");
+      const escapedHeroName = (heroData?.localized_name || 'Hero').replace(/'/g, "\\'");
+
+      html += `
+        <div class="match-item" style="border:1px solid ${statusColor}44;">
+          <div onclick="openMatchModal('${match.match_id}', '${escapedPlayerName}', '${escapedHeroName}')" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <img src="${match.player_avatar}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0;">
+              ${heroImg ? `<img src="${heroImg}" style="width:36px; height:20px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
+              <div>
+                <strong style="color:#eee; font-size:11px;">${match.player_name}</strong>
+                <div style="color:#777; font-size:9px;">KDA: ${match.kills}/${match.deaths}/${match.assists} • ${matchDate}</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
+              <div style="color:#555; font-size:8px;">Click to view 💬</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    feedList.innerHTML = html;
+  }
+
+  /* Modal Overlay Logic */
+  async function openMatchModal(matchId, playerName, heroName) {
+    activeMatchId = matchId;
+    const modal = document.getElementById('commentModal');
+    const header = document.getElementById('modalHeader');
+    const list = document.getElementById('modalCommentsList');
+
+    header.innerHTML = `
+      <div style="font-size: 12px; font-weight: bold; color: #ff5252;">💬 MATCH CHANTS</div>
+      <div style="font-size: 10px; color: #888; margin-top: 2px;">
+        Player: <strong style="color: #fff;">${playerName}</strong> (${heroName}) | 
+        <a href="https://www.dotabuff.com/matches/${matchId}" target="_blank" style="color: #e53935; text-decoration: none;">Dotabuff #${matchId} ↗</a>
+      </div>
+    `;
+
+    list.innerHTML = '<span style="color: #555;">Loading chants...</span>';
+    modal.style.display = 'flex';
+
+    await loadModalComments(matchId);
+  }
+
+  function closeMatchModal() {
+    document.getElementById('commentModal').style.display = 'none';
+    activeMatchId = null;
+  }
+
+  async function loadModalComments(matchId) {
+    const list = document.getElementById('modalCommentsList');
+    const { data: comments } = await db.from('match_comments').select('*').eq('match_id', String(matchId)).order('created_at', { ascending: true });
+
+    if (!comments || comments.length === 0) {
+      list.innerHTML = `<span style="color:#555; font-style:italic;">No chants inscribed on this match yet.</span>`;
+      return;
+    }
+
+    list.innerHTML = comments.map(c => `
+      <div style="background:#0e0404; padding:5px 8px; border-radius:4px; border-left:2px solid #8e0000; color:#ccc;">
         <strong style="color:#ff5252;">${c.username}:</strong> ${c.comment}
       </div>
     `).join('');
   }
 
-  async function postMatchComment(matchId) {
-    const input = document.getElementById(`match-input-${matchId}`);
+  async function submitModalComment() {
+    if (!activeMatchId) return;
+
+    const input = document.getElementById('modalInput');
     const text = input.value.trim();
     if (!text) return;
 
     const username = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
 
-    await db.from('match_comments').insert([{ match_id: String(matchId), username: username, comment: text }]);
+    await db.from('match_comments').insert([{ match_id: String(activeMatchId), username: username, comment: text }]);
     input.value = '';
-    fetchMatchComments(matchId);
+    loadModalComments(activeMatchId);
   }
 
   async function fetchCursedSouls() {
