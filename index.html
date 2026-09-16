@@ -157,7 +157,7 @@
     }
 
     .comment-list {
-      max-height: 280px;
+      max-height: 380px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -186,7 +186,7 @@
     }
 
     .soul-list {
-      max-height: 420px;
+      max-height: 480px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -222,7 +222,7 @@
       border-radius: 10px;
     }
 
-    /* Fixed Match Feed Scroll Container */
+    /* Fixed Match Feed List */
     .feed-container {
       max-height: 320px;
       overflow-y: auto;
@@ -234,17 +234,24 @@
     }
 
     .match-item {
-      border-radius: 6px;
       background: #080303;
-      overflow: hidden;
-      transition: border-color 0.2s;
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      box-sizing: border-box;
+      min-height: 52px;
     }
 
     .match-item:hover {
+      background: #110606;
       filter: brightness(1.15);
     }
 
-    /* Modal Styling */
+    /* Generic Modal Overlay Styling */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -265,9 +272,10 @@
       box-shadow: 0 0 30px rgba(229, 57, 53, 0.5);
       border-radius: 10px;
       width: 90%;
-      max-width: 480px;
+      max-width: 520px;
       padding: 20px;
       position: relative;
+      box-sizing: border-box;
     }
 
     .modal-close {
@@ -275,7 +283,7 @@
       top: 10px;
       right: 14px;
       color: #888;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
       font-weight: bold;
     }
@@ -294,6 +302,7 @@
 <canvas id="emberCanvas"></canvas>
 
 <div class="wrapper">
+  <!-- Left Panel: Chant Wall -->
   <div class="panel">
     <div class="panel-title">📜 DARK CHANT WALL 📜</div>
     
@@ -306,6 +315,7 @@
     </div>
   </div>
 
+  <!-- Middle Panel: Main Hex Ritual & Recent Matches -->
   <div class="panel">
     <h1>The Hex of the Ancient</h1>
     <div class="intro">
@@ -323,9 +333,14 @@
       <div id="curseFeedList" class="feed-container">
         <p style="color: #666; font-size: 11px; text-align: center;">Scanning the ether for match updates...</p>
       </div>
+      
+      <button onclick="openAllMatchesModal()" class="btn-secondary" style="margin-top: 10px; font-size: 11px; padding: 8px;">
+        🔍 VIEW ALL RECENT MATCHES (TOP 20)
+      </button>
     </div>
   </div>
 
+  <!-- Right Panel: Leaderboard -->
   <div class="panel flaming-panel">
     <div class="panel-title">🔥 MOST CURSED SOULS 🔥</div>
     <div id="soulList" class="soul-list">
@@ -334,7 +349,7 @@
   </div>
 </div>
 
-<!-- Match Comments Overlay Modal -->
+<!-- Modal 1: Individual Match Comments -->
 <div id="commentModal" class="modal-overlay" style="display: none;">
   <div class="modal-content">
     <span class="modal-close" onclick="closeMatchModal()">&times;</span>
@@ -351,6 +366,20 @@
   </div>
 </div>
 
+<!-- Modal 2: View All Recent Matches (Top 20) -->
+<div id="allMatchesModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <span class="modal-close" onclick="closeAllMatchesModal()">&times;</span>
+    <div style="font-size: 13px; font-weight: bold; color: #ff3333; text-align: center; border-bottom: 1px solid #331010; padding-bottom: 8px; margin-bottom: 12px;">
+      ⚔️ RECENT 20 CURSED MATCHES ⚔️
+    </div>
+    
+    <div id="allMatchesList" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+      <span style="color: #555; text-align: center;">Loading all recent matches...</span>
+    </div>
+  </div>
+</div>
+
 <script>
   const SUPABASE_URL = 'https://vojxzhehhlxnhsliyihv.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_Kh6OsEPkklRaJcGCuBGfbQ_gOIVleLf';
@@ -359,6 +388,7 @@
   let currentAccountId = null;
   let activeMatchId = null;
   let heroDict = {};
+  let globalAllMatches = [];
 
   async function loadHeroDict() {
     try {
@@ -379,6 +409,7 @@
     };
   }
 
+  // Particle Canvas Background
   const canvas = document.getElementById('emberCanvas');
   const ctx = canvas.getContext('2d');
   let particles = [];
@@ -421,6 +452,7 @@
 
   function cleanInput(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
+  // Dark Chant Wall Functions
   async function postComment() {
     const user = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
     const msg = document.getElementById('commentMsg').value.trim();
@@ -453,6 +485,7 @@
     box.innerHTML = html;
   }
 
+  // Hex Cast Ritual
   async function castHex() {
     playRitualAudio();
     
@@ -524,6 +557,41 @@
     document.getElementById('feedBox').style.display = 'block';
   }
 
+  // HTML Match Card Builder Helper Function
+  function renderMatchCardHTML(match) {
+    const isRadiant = match.player_slot < 128;
+    const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
+
+    const statusColor = isWin ? '#4caf50' : '#f44336';
+    const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
+    const statusIcon = isWin ? '🛡️' : '☠️';
+
+    const heroData = heroDict[match.hero_id];
+    const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
+    const matchDate = new Date(match.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const escapedPlayerName = match.player_name.replace(/'/g, "\\'");
+    const escapedHeroName = (heroData?.localized_name || 'Hero').replace(/'/g, "\\'");
+
+    return `
+      <div class="match-item" style="border:1px solid ${statusColor}44;" onclick="openMatchModal('${match.match_id}', '${escapedPlayerName}', '${escapedHeroName}')">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="${match.player_avatar}" style="width:32px; height:32px; border-radius:4px; flex-shrink:0;">
+          ${heroImg ? `<img src="${heroImg}" style="width:40px; height:23px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
+          <div>
+            <strong style="color:#eee; font-size:11px;">${match.player_name}</strong>
+            <div style="color:#777; font-size:9px;">KDA: ${match.kills}/${match.deaths}/${match.assists} • ${matchDate}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
+          <div style="color:#555; font-size:8px;">Click to view 💬</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Fetch Curse Match Feed
   async function fetchCurseMatchFeed() {
     const feedList = document.getElementById('curseFeedList');
     const { data: cursedPlayers } = await db.from('cursed_players').select('account_id, persona_name, avatar_url');
@@ -534,7 +602,7 @@
     }
 
     const uniquePlayers = [...new Map(cursedPlayers.map(p => [p.account_id, p])).values()];
-    let allMatches = [];
+    globalAllMatches = [];
 
     await Promise.all(uniquePlayers.map(async (player) => {
       try {
@@ -542,7 +610,7 @@
         const matches = await res.json();
         if (matches && Array.isArray(matches)) {
           matches.forEach(m => {
-            allMatches.push({
+            globalAllMatches.push({
               ...m,
               player_name: player.persona_name,
               player_avatar: player.avatar_url,
@@ -553,55 +621,24 @@
       } catch (e) {}
     }));
 
-    if (allMatches.length === 0) {
+    if (globalAllMatches.length === 0) {
       feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
       return;
     }
 
     // Sort strictly by most recent date/time across all players
-    allMatches.sort((a, b) => b.start_time - a.start_time);
+    globalAllMatches.sort((a, b) => b.start_time - a.start_time);
 
+    // Show only the top 5 matches on main page
     let html = '';
-    // Pull top 20 matches overall
-    for (const match of allMatches.slice(0, 20)) {
-      const isRadiant = match.player_slot < 128;
-      const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
-
-      const statusColor = isWin ? '#4caf50' : '#f44336';
-      const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
-      const statusIcon = isWin ? '🛡️' : '☠️';
-
-      const heroData = heroDict[match.hero_id];
-      const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
-      const matchDate = new Date(match.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-      const escapedPlayerName = match.player_name.replace(/'/g, "\\'");
-      const escapedHeroName = (heroData?.localized_name || 'Hero').replace(/'/g, "\\'");
-
-      html += `
-        <div class="match-item" style="border:1px solid ${statusColor}44;">
-          <div onclick="openMatchModal('${match.match_id}', '${escapedPlayerName}', '${escapedHeroName}')" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; cursor:pointer;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <img src="${match.player_avatar}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0;">
-              ${heroImg ? `<img src="${heroImg}" style="width:36px; height:20px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
-              <div>
-                <strong style="color:#eee; font-size:11px;">${match.player_name}</strong>
-                <div style="color:#777; font-size:9px;">KDA: ${match.kills}/${match.deaths}/${match.assists} • ${matchDate}</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
-              <div style="color:#555; font-size:8px;">Click to view 💬</div>
-            </div>
-          </div>
-        </div>
-      `;
+    for (const match of globalAllMatches.slice(0, 5)) {
+      html += renderMatchCardHTML(match);
     }
 
     feedList.innerHTML = html;
   }
 
-  /* Modal Overlay Logic */
+  // Modal 1: Specific Match Chant Modal
   async function openMatchModal(matchId, playerName, heroName) {
     activeMatchId = matchId;
     const modal = document.getElementById('commentModal');
@@ -657,6 +694,29 @@
     loadModalComments(activeMatchId);
   }
 
+  // Modal 2: View All Recent Matches (Top 20)
+  function openAllMatchesModal() {
+    const modal = document.getElementById('allMatchesModal');
+    const list = document.getElementById('allMatchesList');
+
+    if (globalAllMatches.length === 0) {
+      list.innerHTML = '<span style="color:#666; text-align:center;">No recent matches available.</span>';
+    } else {
+      let html = '';
+      for (const match of globalAllMatches.slice(0, 20)) {
+        html += renderMatchCardHTML(match);
+      }
+      list.innerHTML = html;
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeAllMatchesModal() {
+    document.getElementById('allMatchesModal').style.display = 'none';
+  }
+
+  // Fetch Cursed Souls Leaderboard
   async function fetchCursedSouls() {
     const soulList = document.getElementById('soulList');
     const { data } = await db.from('cursed_players').select('*');
