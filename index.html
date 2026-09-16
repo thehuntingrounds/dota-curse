@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>The Ritual of the Red Card</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Anti-Caching Meta Tags: Forces browsers to fetch fresh files on every page load -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <!-- Cache-busting parameter added to external library requests -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?v=1.0.2"></script>
+  
   <style>
     body {
       background-color: #050608;
@@ -222,7 +230,6 @@
       border-radius: 10px;
     }
 
-    /* Fixed Match Feed List */
     .feed-container {
       max-height: 320px;
       overflow-y: auto;
@@ -251,7 +258,6 @@
       filter: brightness(1.15);
     }
 
-    /* Generic Modal Overlay Styling */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -409,7 +415,6 @@
     };
   }
 
-  // Particle Canvas Background
   const canvas = document.getElementById('emberCanvas');
   const ctx = canvas.getContext('2d');
   let particles = [];
@@ -452,7 +457,6 @@
 
   function cleanInput(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
-  // Dark Chant Wall Functions
   async function postComment() {
     const user = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
     const msg = document.getElementById('commentMsg').value.trim();
@@ -485,7 +489,6 @@
     box.innerHTML = html;
   }
 
-  // Hex Cast Ritual
   async function castHex() {
     playRitualAudio();
     
@@ -557,7 +560,6 @@
     document.getElementById('feedBox').style.display = 'block';
   }
 
-  // HTML Match Card Builder Helper Function
   function renderMatchCardHTML(match) {
     const isRadiant = match.player_slot < 128;
     const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
@@ -591,7 +593,6 @@
     `;
   }
 
-  // Fetch Curse Match Feed
   async function fetchCurseMatchFeed() {
     const feedList = document.getElementById('curseFeedList');
     const { data: cursedPlayers } = await db.from('cursed_players').select('account_id, persona_name, avatar_url');
@@ -626,10 +627,8 @@
       return;
     }
 
-    // Sort strictly by most recent date/time across all players
     globalAllMatches.sort((a, b) => b.start_time - a.start_time);
 
-    // Show only the top 5 matches on main page
     let html = '';
     for (const match of globalAllMatches.slice(0, 5)) {
       html += renderMatchCardHTML(match);
@@ -638,7 +637,6 @@
     feedList.innerHTML = html;
   }
 
-  // Modal 1: Specific Match Chant Modal
   async function openMatchModal(matchId, playerName, heroName) {
     activeMatchId = matchId;
     const modal = document.getElementById('commentModal');
@@ -694,7 +692,6 @@
     loadModalComments(activeMatchId);
   }
 
-  // Modal 2: View All Recent Matches (Top 20)
   function openAllMatchesModal() {
     const modal = document.getElementById('allMatchesModal');
     const list = document.getElementById('allMatchesList');
@@ -716,7 +713,6 @@
     document.getElementById('allMatchesModal').style.display = 'none';
   }
 
-  // Fetch Cursed Souls Leaderboard
   async function fetchCursedSouls() {
     const soulList = document.getElementById('soulList');
     const { data } = await db.from('cursed_players').select('*');
