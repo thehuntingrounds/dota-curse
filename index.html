@@ -486,8 +486,8 @@
             <div style="border:1px solid ${statusColor}44; margin-bottom:8px; border-radius:6px; background:#080303; overflow:hidden;">
               <div onclick="toggleMatchDrawer('${lastMatch.match_id}')" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; cursor:pointer;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px;">
-                  ${heroImg ? `<img src="${heroImg}" style="height:22px; border-radius:3px; border:1px solid #444;" title="${heroData?.localized_name || ''}">` : ''}
+                  <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0;">
+                  ${heroImg ? `<img src="${heroImg}" style="width:36px; height:20px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
                   <div>
                     <strong style="color:#eee; font-size:11px;">${player.persona_name}</strong>
                     <div style="color:#777; font-size:9px;">KDA: ${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists} • ${matchDate}</div>
