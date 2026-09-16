@@ -29,7 +29,6 @@
       pointer-events: none;
     }
 
-    /* 3-Column Responsive Layout */
     .wrapper {
       position: relative;
       z-index: 1;
@@ -54,7 +53,6 @@
       flex-direction: column;
     }
 
-    /* FLAMING RIGHT SIDEBAR */
     .flaming-panel {
       border: 1px solid #ff3333;
       box-shadow: 0 0 30px rgba(255, 30, 0, 0.4), inset 0 0 15px rgba(255, 60, 0, 0.2);
@@ -147,7 +145,17 @@
       box-shadow: 0 0 15px rgba(244, 67, 54, 0.8);
     }
 
-    /* Comment Section Styling */
+    .btn-secondary {
+      background: #1b1c24;
+      border: 1px solid #3d4152;
+      color: #aaa;
+    }
+
+    .btn-secondary:hover {
+      background: #2a2d3d;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+
     .comment-list {
       max-height: 280px;
       overflow-y: auto;
@@ -177,7 +185,6 @@
       word-break: break-word;
     }
 
-    /* Soul Leaderboard Styling */
     .soul-list {
       max-height: 420px;
       overflow-y: auto;
@@ -215,6 +222,25 @@
       border-radius: 10px;
     }
 
+    .feed-container {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .feed-card {
+      background: #080303;
+      padding: 8px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: #8e0000; border-radius: 2px; }
   </style>
@@ -224,7 +250,6 @@
 <canvas id="emberCanvas"></canvas>
 
 <div class="wrapper">
-  <!-- LEFT: ANONYMOUS CHANT WALL (COMMENTS) -->
   <div class="panel">
     <div class="panel-title">📜 DARK CHANT WALL 📜</div>
     
@@ -237,7 +262,6 @@
     </div>
   </div>
 
-  <!-- MIDDLE: MAIN RITUAL PANEL -->
   <div class="panel">
     <h1>The Hex of the Ancient</h1>
     <div class="intro">
@@ -249,9 +273,15 @@
     <button id="hexBtn" onclick="castHex()">Begin the Ritual</button>
 
     <div id="resultBox" style="display:none; margin-top:15px; padding:12px; background:#050507; border:1px solid #8e0000; border-radius:8px;"></div>
+
+    <div id="feedBox" style="margin-top:20px; border-top:1px solid #2a1010; padding-top:12px;">
+      <div class="panel-title" style="margin-bottom: 8px;">👁️ LIVE CURSE MATCH FEED 👁️</div>
+      <div id="curseFeedList" class="feed-container">
+        <p style="color: #666; font-size: 11px; text-align: center;">Scanning the ether for match updates...</p>
+      </div>
+    </div>
   </div>
 
-  <!-- RIGHT: FLAMING LEADERBOARD -->
   <div class="panel flaming-panel">
     <div class="panel-title">🔥 MOST CURSED SOULS 🔥</div>
     <div id="soulList" class="soul-list">
@@ -267,21 +297,19 @@
 
   let currentAccountId = null;
 
-  // --- AUDIO SEQUENCER (AXE DUNK -> WARLOCK VOICE) ---
   function playRitualAudio() {
     const axeAudio = new Audio('axe_ult.mp3');
     axeAudio.volume = 1.0;
     
-    axeAudio.play().catch(e => console.log("Axe audio blocked or missing:", e));
+    axeAudio.play().catch(e => {});
 
     axeAudio.onended = () => {
       const warlockAudio = new Audio('gg1.mp3');
       warlockAudio.volume = 0.9;
-      warlockAudio.play().catch(e => console.log("Warlock audio blocked or missing:", e));
+      warlockAudio.play().catch(e => {});
     };
   }
 
-  // --- EMBERS CANVAS ---
   const canvas = document.getElementById('emberCanvas');
   const ctx = canvas.getContext('2d');
   let particles = [];
@@ -318,11 +346,11 @@
   window.addEventListener('DOMContentLoaded', () => {
     fetchCursedSouls();
     fetchComments();
+    fetchCurseMatchFeed();
   });
 
   function cleanInput(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
-  // --- COMMENTS LOGIC ---
   async function postComment() {
     const user = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
     const msg = document.getElementById('commentMsg').value.trim();
@@ -355,12 +383,12 @@
     box.innerHTML = html;
   }
 
-  // --- RITUAL LOGIC ---
   async function castHex() {
     playRitualAudio();
     
     const input = document.getElementById('targetInput').value.trim();
     const resultBox = document.getElementById('resultBox');
+    const feedBox = document.getElementById('feedBox');
     const btn = document.getElementById('hexBtn');
 
     if (!input) { alert("Please enter a valid numeric Steam Account ID!"); return; }
@@ -388,16 +416,23 @@
 
       await db.from('cursed_players').insert([{ account_id: currentAccountId, persona_name: personaName, avatar_url: avatarUrl }]);
       fetchCursedSouls();
+      fetchCurseMatchFeed();
+
+      feedBox.style.display = 'none';
 
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
         <div style="color:#ff5252; font-weight:bold; text-align:center; font-size:13px; margin-bottom:8px;">☠️ RITUAL COMPLETE: CURSE SEATED ☠️</div>
-        <div style="display:flex; align-items:center; gap:10px; background:#0d0f14; padding:8px; border-radius:6px;">
+        <div style="display:flex; align-items:center; gap:10px; background:#0d0f14; padding:8px; border-radius:6px; margin-bottom:10px;">
           <img src="${avatarUrl}" style="width:40px; height:40px; border-radius:4px; border:1px solid #e53935;">
           <div>
             <strong style="color:#fff; font-size:14px;">${personaName}</strong>
             <div style="font-size:11px; color:#888;">Career W/L: <span style="color:#4caf50;">${wlData.win || 0}W</span> - <span style="color:#f44336;">${wlData.lose || 0}L</span></div>
           </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button onclick="toggleFeed(true)" class="btn-secondary" style="margin:0; font-size:10px;">SHOW NEWS FEED</button>
+          <button onclick="clearTarget()" style="margin:0; background:#3d1414; border:1px solid #7f0000; font-size:10px;">CLEAR TARGET</button>
         </div>
       `;
     } catch (e) {
@@ -408,7 +443,68 @@
     btn.disabled = false;
   }
 
-  // --- LEADERBOARD LOGIC ---
+  function toggleFeed(showFeed) {
+    const feedBox = document.getElementById('feedBox');
+    if (showFeed) {
+      feedBox.style.display = 'block';
+    } else {
+      feedBox.style.display = 'none';
+    }
+  }
+
+  function clearTarget() {
+    document.getElementById('targetInput').value = '';
+    document.getElementById('resultBox').style.display = 'none';
+    document.getElementById('feedBox').style.display = 'block';
+  }
+
+  async function fetchCurseMatchFeed() {
+    const feedList = document.getElementById('curseFeedList');
+    const { data: cursedPlayers } = await db.from('cursed_players').select('account_id, persona_name, avatar_url');
+
+    if (!cursedPlayers || cursedPlayers.length === 0) {
+      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No hexed souls to track yet.</p>';
+      return;
+    }
+
+    const uniquePlayers = [...new Map(cursedPlayers.map(p => [p.account_id, p])).values()];
+    let html = '';
+
+    for (const player of uniquePlayers.slice(0, 6)) {
+      try {
+        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/recentMatches`);
+        const matches = await res.json();
+
+        if (matches && matches.length > 0) {
+          const lastMatch = matches[0];
+          const isRadiant = lastMatch.player_slot < 128;
+          const isWin = (isRadiant && lastMatch.radiant_win) || (!isRadiant && !lastMatch.radiant_win);
+
+          const statusColor = isWin ? '#4caf50' : '#f44336';
+          const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
+          const statusIcon = isWin ? '🛡️' : '☠️';
+
+          html += `
+            <div class="feed-card" style="border:1px solid ${statusColor}44;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px;">
+                <div>
+                  <strong style="color:#eee; font-size:11px;">${player.persona_name}</strong>
+                  <div style="color:#777; font-size:9px;">KDA: ${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
+              </div>
+            </div>
+          `;
+        }
+      } catch (e) {}
+    }
+
+    feedList.innerHTML = html || '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
+  }
+
   async function fetchCursedSouls() {
     const soulList = document.getElementById('soulList');
     const { data } = await db.from('cursed_players').select('*');
