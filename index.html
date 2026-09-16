@@ -259,6 +259,28 @@
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
     }
 
+    /* Refresh Sync Button on Rank Cards */
+    .btn-sync {
+      background: #1a233a;
+      border: 1px solid #3a4b7c;
+      color: #7697ff;
+      font-size: 10px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0;
+      width: auto;
+      text-transform: none;
+      font-weight: normal;
+      transition: all 0.2s;
+    }
+
+    .btn-sync:hover {
+      background: #28375e;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(118, 151, 255, 0.4);
+    }
+
     .comment-list {
       max-height: 380px;
       overflow-y: auto;
@@ -432,6 +454,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       transition: transform 0.15s;
     }
 
@@ -581,7 +604,7 @@
 <div id="rankView" class="rank-wrapper" style="display: none;">
   <div class="panel rank-panel">
     <div style="font-size: 18px; color: #f39c12; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; margin-bottom: 15px;">
-      🏆 Global Dota 2 Rank Leaderboard
+      🏆 Community Dota 2 Rank Leaderboard
     </div>
 
     <!-- Rank Distribution Chart -->
@@ -962,12 +985,67 @@
               </span>
             </div>
           </div>
-          ${getRankDeltaBadge(p.rank_tier, p.previous_rank_tier)}
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="btn-sync" onclick="refreshPlayerRank('${p.account_id}', this)" title="Force sync latest rank from OpenDota">
+              🔄 Sync
+            </button>
+            ${getRankDeltaBadge(p.rank_tier, p.previous_rank_tier)}
+          </div>
         </div>
       `;
     });
 
     list.innerHTML = html;
+  }
+
+  // New Manual Refresh Function for Rank Cards
+  async function refreshPlayerRank(accountId, buttonElement) {
+    buttonElement.textContent = "Syncing...";
+    buttonElement.disabled = true;
+
+    try {
+      // 1. Tell OpenDota to re-parse/refresh the user profile
+      const refreshResponse = await fetch(`https://api.opendota.com/api/players/${accountId}/refresh`, {
+        method: 'POST'
+      });
+
+      if (!refreshResponse.ok) {
+        throw new Error("OpenDota refresh failed.");
+      }
+
+      // 2. Wait 3 seconds to give OpenDota time to pull fresh data from Valve
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // 3. Fetch the updated data from OpenDota and update Supabase
+      const res = await fetch(`https://api.opendota.com/api/players/${accountId}`);
+      const playerData = await res.json();
+
+      if (playerData && playerData.profile) {
+        const currentRank = playerData.rank_tier || 0;
+        
+        const { data: existing } = await db.from('cursed_players').select('*').eq('account_id', accountId).single();
+        if (existing) {
+          const prevRank = (existing.rank_tier !== currentRank) ? existing.rank_tier : existing.previous_rank_tier;
+          await db.from('cursed_players').update({
+            persona_name: playerData.profile.personaname,
+            avatar_url: playerData.profile.avatarfull,
+            rank_tier: currentRank,
+            previous_rank_tier: prevRank,
+            last_rank_updated_at: new Date()
+          }).eq('account_id', accountId);
+        }
+      }
+
+      // 4. Reload the leaderboard UI
+      await fetchRankLeaderboard();
+      alert("Sync complete! Your latest rank from OpenDota has been pulled.");
+    } catch (error) {
+      console.error("Refresh error:", error);
+      alert("Couldn't reach OpenDota right now. Make sure 'Expose Public Match Data' is turned on in your Dota 2 settings!");
+    } finally {
+      buttonElement.textContent = "🔄 Sync";
+      buttonElement.disabled = false;
+    }
   }
 
   function renderRankGraph(players) {
@@ -1003,219 +1081,14 @@
       const count = counts[key];
       if (count > 0) {
         const pct = Math.round((count / total) * 100);
-        barHtml += `<div class="graph-segment" style="width:${pct}%; background:${colors[key]};" title="${key}: ${pct}%"></div>`;
-        legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${colors[key]};"></div> ${key} (${pct}%)</div>`;
+        barHtml += `<div class="graph-segment" style="width: ${pct}%; background: ${colors[key]};" title="${key}: ${count} (${pct}%)"></div>`;
+        legendHtml += `<div class="legend-item"><div class="legend-dot" style="background: ${colors[key]};"></div><span>${key} (${count})</span></div>`;
       }
     });
 
     bar.innerHTML = barHtml;
     legend.innerHTML = legendHtml;
   }
-
-  function toggleFeed(showFeed) {
-    const feedBox = document.getElementById('feedBox');
-    feedBox.style.display = showFeed ? 'block' : 'none';
-  }
-
-  function clearTarget() {
-    document.getElementById('targetInput').value = '';
-    document.getElementById('resultBox').style.display = 'none';
-    document.getElementById('feedBox').style.display = 'block';
-  }
-
-  function renderMatchCardHTML(match) {
-    const isRadiant = match.player_slot < 128;
-    const isWin = (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
-
-    const statusColor = isWin ? '#f44336' : '#4caf50';
-    const statusText = isWin ? 'MATCH WON' : 'MATCH LOST';
-    const statusIcon = isWin ? '⚔️' : '💀';
-
-    const heroData = heroDict[match.hero_id];
-    const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
-    const matchDate = new Date(match.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-    const escapedPlayerName = match.player_name.replace(/'/g, "\\'");
-    const escapedHeroName = (heroData?.localized_name || 'Hero').replace(/'/g, "\\'");
-
-    return `
-      <div class="match-item" style="border:1px solid ${statusColor}44;" onclick="openMatchModal('${match.match_id}', '${escapedPlayerName}', '${escapedHeroName}')">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="${match.player_avatar}" style="width:32px; height:32px; border-radius:4px; flex-shrink:0;">
-          ${heroImg ? `<img src="${heroImg}" style="width:40px; height:23px; object-fit:cover; border-radius:3px; border:1px solid #444; flex-shrink:0;" title="${heroData?.localized_name || ''}">` : ''}
-          <div>
-            <strong style="color:#eee; font-size:11px;">${match.player_name}</strong>
-            <div style="color:#777; font-size:9px;">KDA: ${match.kills}/${match.deaths}/${match.assists} • ${matchDate}</div>
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
-          <div style="color:#555; font-size:8px;">Click to view 💬</div>
-        </div>
-      </div>
-    `;
-  }
-
-  async function fetchCurseMatchFeed() {
-    const feedList = document.getElementById('curseFeedList');
-    const { data: cursedPlayers } = await db.from('cursed_players').select('account_id, persona_name, avatar_url');
-
-    if (!cursedPlayers || cursedPlayers.length === 0) {
-      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No hexed souls to track yet.</p>';
-      return;
-    }
-
-    const uniquePlayers = [...new Map(cursedPlayers.map(p => [p.account_id, p])).values()];
-    globalAllMatches = [];
-
-    await Promise.all(uniquePlayers.map(async (player) => {
-      try {
-        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/recentMatches`);
-        const matches = await res.json();
-        if (matches && Array.isArray(matches)) {
-          matches.forEach(m => {
-            globalAllMatches.push({
-              ...m,
-              player_name: player.persona_name,
-              player_avatar: player.avatar_url,
-              player_id: player.account_id
-            });
-          });
-        }
-      } catch (e) {}
-    }));
-
-    if (globalAllMatches.length === 0) {
-      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
-      return;
-    }
-
-    globalAllMatches.sort((a, b) => b.start_time - a.start_time);
-
-    let html = '';
-    for (const match of globalAllMatches.slice(0, 5)) {
-      html += renderMatchCardHTML(match);
-    }
-
-    feedList.innerHTML = html;
-  }
-
-  async function openMatchModal(matchId, playerName, heroName) {
-    activeMatchId = matchId;
-    const modal = document.getElementById('commentModal');
-    const header = document.getElementById('modalHeader');
-    const list = document.getElementById('modalCommentsList');
-
-    header.innerHTML = `
-      <div style="font-size: 12px; font-weight: bold; color: #ff5252;">💬 MATCH CHANTS</div>
-      <div style="font-size: 10px; color: #888; margin-top: 2px;">
-        Player: <strong style="color: #fff;">${playerName}</strong> (${heroName}) | 
-        <a href="https://www.dotabuff.com/matches/${matchId}" target="_blank" style="color: #e53935; text-decoration: none;">Dotabuff #${matchId} ↗</a>
-      </div>
-    `;
-
-    list.innerHTML = '<span style="color: #555;">Loading chants...</span>';
-    modal.style.display = 'flex';
-
-    await loadModalComments(matchId);
-  }
-
-  function closeMatchModal() {
-    document.getElementById('commentModal').style.display = 'none';
-    activeMatchId = null;
-  }
-
-  async function loadModalComments(matchId) {
-    const list = document.getElementById('modalCommentsList');
-    const { data: comments } = await db.from('match_comments').select('*').eq('match_id', String(matchId)).order('created_at', { ascending: true });
-
-    if (!comments || comments.length === 0) {
-      list.innerHTML = `<span style="color:#555; font-style:italic;">No chants inscribed on this match yet.</span>`;
-      return;
-    }
-
-    list.innerHTML = comments.map(c => `
-      <div style="background:#0e0404; padding:5px 8px; border-radius:4px; border-left:2px solid #8e0000; color:#ccc;">
-        <strong style="color:#ff5252;">${c.username}:</strong> ${c.comment}
-      </div>
-    `).join('');
-  }
-
-  async function submitModalComment() {
-    if (!activeMatchId) return;
-
-    const input = document.getElementById('modalInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const username = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
-
-    await db.from('match_comments').insert([{ match_id: String(activeMatchId), username: username, comment: text }]);
-    input.value = '';
-    loadModalComments(activeMatchId);
-  }
-
-  function openAllMatchesModal() {
-    const modal = document.getElementById('allMatchesModal');
-    const list = document.getElementById('allMatchesList');
-
-    if (globalAllMatches.length === 0) {
-      list.innerHTML = '<span style="color:#666; text-align:center;">No recent matches available.</span>';
-    } else {
-      let html = '';
-      for (const match of globalAllMatches.slice(0, 20)) {
-        html += renderMatchCardHTML(match);
-      }
-      list.innerHTML = html;
-    }
-
-    modal.style.display = 'flex';
-  }
-
-  function closeAllMatchesModal() {
-    document.getElementById('allMatchesModal').style.display = 'none';
-  }
-
-  async function fetchCursedSouls() {
-    const soulList = document.getElementById('soulList');
-    const { data } = await db.from('cursed_players').select('*');
-    if (!data || data.length === 0) {
-      soulList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No players hexed yet.</p>';
-      return;
-    }
-
-    const counts = {}, profiles = {};
-    data.forEach(p => {
-      counts[p.account_id] = (counts[p.account_id] || 0) + 1;
-      profiles[p.account_id] = p;
-    });
-
-    const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-
-    let html = '';
-    sortedIds.forEach((id, index) => {
-      const p = profiles[id];
-      const isFirst = index === 0;
-      const rank = isFirst ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-      const rgbClass = isFirst ? 'rgb-first-place' : '';
-
-      html += `
-        <div class="soul-card ${rgbClass}">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="color:#888; font-size:11px; font-weight:bold;">${rank}</span>
-            <img class="soul-avatar" src="${p.avatar_url}">
-            <div>
-              <strong style="color:#eee; font-size:11px;">${p.persona_name}</strong>
-              <div style="color:#666; font-size:9px;">ID: ${p.account_id}</div>
-            </div>
-          </div>
-          <div class="hex-badge">🔥 ${counts[id]}x</div>
-        </div>
-      `;
-    });
-    soulList.innerHTML = html;
-  }
 </script>
-
 </body>
 </html>
