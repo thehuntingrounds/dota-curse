@@ -223,22 +223,12 @@
     }
 
     .feed-container {
-      max-height: 220px;
+      max-height: 280px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
-    }
-
-    .feed-card {
-      background: #080303;
-      padding: 8px 10px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 11px;
     }
 
     ::-webkit-scrollbar { width: 4px; }
@@ -296,11 +286,18 @@
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let currentAccountId = null;
+  let heroDict = {};
+
+  async function loadHeroDict() {
+    try {
+      const res = await fetch('https://api.opendota.com/api/constants/heroes');
+      heroDict = await res.json();
+    } catch (e) {}
+  }
 
   function playRitualAudio() {
     const axeAudio = new Audio('axe_ult.mp3');
     axeAudio.volume = 1.0;
-    
     axeAudio.play().catch(e => {});
 
     axeAudio.onended = () => {
@@ -343,7 +340,8 @@
   }
   animateEmbers();
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
+    await loadHeroDict();
     fetchCursedSouls();
     fetchComments();
     fetchCurseMatchFeed();
@@ -445,11 +443,7 @@
 
   function toggleFeed(showFeed) {
     const feedBox = document.getElementById('feedBox');
-    if (showFeed) {
-      feedBox.style.display = 'block';
-    } else {
-      feedBox.style.display = 'none';
-    }
+    feedBox.style.display = showFeed ? 'block' : 'none';
   }
 
   function clearTarget() {
@@ -484,17 +478,41 @@
           const statusText = isWin ? 'CURSE RESISTED' : 'CURSE EFFECTIVE';
           const statusIcon = isWin ? '🛡️' : '☠️';
 
+          const heroData = heroDict[lastMatch.hero_id];
+          const heroImg = heroData ? `https://api.opendota.com${heroData.img}` : '';
+          const matchDate = new Date(lastMatch.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
           html += `
-            <div class="feed-card" style="border:1px solid ${statusColor}44;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px;">
-                <div>
-                  <strong style="color:#eee; font-size:11px;">${player.persona_name}</strong>
-                  <div style="color:#777; font-size:9px;">KDA: ${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists}</div>
+            <div style="border:1px solid ${statusColor}44; margin-bottom:8px; border-radius:6px; background:#080303; overflow:hidden;">
+              <div onclick="toggleMatchDrawer('${lastMatch.match_id}')" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <img src="${player.avatar_url}" style="width:28px; height:28px; border-radius:4px;">
+                  ${heroImg ? `<img src="${heroImg}" style="height:22px; border-radius:3px; border:1px solid #444;" title="${heroData?.localized_name || ''}">` : ''}
+                  <div>
+                    <strong style="color:#eee; font-size:11px;">${player.persona_name}</strong>
+                    <div style="color:#777; font-size:9px;">KDA: ${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists} • ${matchDate}</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
+                  <div style="color:#555; font-size:8px;">Click to view 💬</div>
                 </div>
               </div>
-              <div style="text-align:right;">
-                <span style="color:${statusColor}; font-weight:bold; font-size:10px;">${statusIcon} ${statusText}</span>
+
+              <div id="match-drawer-${lastMatch.match_id}" style="display:none; padding:10px; border-top:1px solid #222; background:#030101;">
+                <div style="font-size:10px; color:#aaa; margin-bottom:6px; display:flex; justify-content:space-between;">
+                  <span>Match ID: <a href="https://www.dotabuff.com/matches/${lastMatch.match_id}" target="_blank" style="color:#ff5252; text-decoration:none;">#${lastMatch.match_id}</a></span>
+                  <span style="color:#666;">Hero: ${heroData?.localized_name || 'Unknown'}</span>
+                </div>
+
+                <div id="match-comments-${lastMatch.match_id}" style="max-height:90px; overflow-y:auto; font-size:10px; margin-bottom:8px; display:flex; flex-direction:column; gap:4px;">
+                  <span style="color:#555;">Loading match chants...</span>
+                </div>
+
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="match-input-${lastMatch.match_id}" placeholder="Leave a curse comment..." style="flex:1; padding:4px 8px; font-size:10px;">
+                  <button onclick="postMatchComment('${lastMatch.match_id}')" style="width:auto; padding:4px 10px; margin:0; font-size:9px;">Send</button>
+                </div>
               </div>
             </div>
           `;
@@ -503,6 +521,44 @@
     }
 
     feedList.innerHTML = html || '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
+  }
+
+  async function toggleMatchDrawer(matchId) {
+    const drawer = document.getElementById(`match-drawer-${matchId}`);
+    const isHidden = drawer.style.display === 'none';
+    drawer.style.display = isHidden ? 'block' : 'none';
+
+    if (isHidden) {
+      fetchMatchComments(matchId);
+    }
+  }
+
+  async function fetchMatchComments(matchId) {
+    const container = document.getElementById(`match-comments-${matchId}`);
+    const { data: comments } = await db.from('match_comments').select('*').eq('match_id', String(matchId)).order('created_at', { ascending: true });
+
+    if (!comments || comments.length === 0) {
+      container.innerHTML = `<span style="color:#555; font-style:italic;">No comments on this match yet.</span>`;
+      return;
+    }
+
+    container.innerHTML = comments.map(c => `
+      <div style="background:#0e0404; padding:3px 6px; border-radius:3px; border-left:2px solid #8e0000; color:#ccc;">
+        <strong style="color:#ff5252;">${c.username}:</strong> ${c.comment}
+      </div>
+    `).join('');
+  }
+
+  async function postMatchComment(matchId) {
+    const input = document.getElementById(`match-input-${matchId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    const username = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
+
+    await db.from('match_comments').insert([{ match_id: String(matchId), username: username, comment: text }]);
+    input.value = '';
+    fetchMatchComments(matchId);
   }
 
   async function fetchCursedSouls() {
