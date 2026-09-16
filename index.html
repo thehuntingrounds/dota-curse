@@ -479,7 +479,7 @@
           const statusIcon = isWin ? '🛡️' : '☠️';
 
           const heroData = heroDict[lastMatch.hero_id];
-          const heroImg = heroData ? `https://api.opendota.com${heroData.img}` : '';
+          const heroImg = heroData ? `https://cdn.cloudflare.steamstatic.com${heroData.img}` : '';
           const matchDate = new Date(lastMatch.start_time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
           html += `
