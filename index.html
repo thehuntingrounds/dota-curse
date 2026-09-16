@@ -665,37 +665,21 @@
     };
   }
 
- function getRankDeltaBadge(currentRank, previousRank) {
-    if (!previousRank || previousRank === 0 || currentRank === previousRank) {
-      return '<span style="color: #888; font-size: 11px;">No Change</span>';
+  function getRankDeltaBadge(current, previous) {
+    if (!previous || current === previous) {
+      return `<div class="trend-indicator trend-none">⚪ No Change<div class="trend-subtext">stable</div></div>`;
     }
-    
-    // Convert OpenDota rank_tier integers into major tier and star components
-    // e.g., 42 is Ancient 2 (Major 4, Star 2)
-    const currMajor = Math.floor(currentRank / 10);
-    const currStar = currentRank % 10;
-    const prevMajor = Math.floor(previousRank / 10);
-    const prevStar = previousRank % 10;
+    if (previous === 0 && current > 0) {
+      return `<div class="trend-indicator" style="color:#00d8d8;">✨ Calibrated<div class="trend-subtext">new calibration</div></div>`;
+    }
 
-    let diffText = "";
-    let isUp = currentRank > previousRank;
-
-    if (currMajor !== prevMajor) {
-      // Crossed a major medal boundary (e.g. Legend to Ancient)
-      const majorNames = ["", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
-      diffText = `${majorNames[currMajor] || 'Rank'} Up!`;
-      isUp = true;
+    const diff = current - previous;
+    if (diff > 0) {
+      return `<div class="trend-indicator trend-up">🟢 +${diff} Star${diff > 1 ? 's' : ''}<div class="trend-subtext">ranked up</div></div>`;
     } else {
-      // Same major tier, just star movement
-      const starDiff = Math.abs(currStar - prevStar);
-      diffText = isUp ? `+${starDiff} Stars` : `-${starDiff} Stars`;
+      return `<div class="trend-indicator trend-down">🔴 ${diff} Star${Math.abs(diff) > 1 ? 's' : ''}<div class="trend-subtext">de-ranked</div></div>`;
     }
-    
-    const color = isUp ? '#2ecc71' : '#e74c3c';
-    return `<span style="color: ${color}; font-size: 11px; font-weight: bold;">${diffText}</span>`;
   }
-  
-  
 
   function switchView(viewMode) {
     const cursedView = document.getElementById('cursedView');
