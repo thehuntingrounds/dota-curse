@@ -424,7 +424,7 @@
 
     .rank-card:hover { transform: translateX(4px); }
 
-    /* PODIUM / TOP 3 SPECIAL HUD BRACKETS */
+    /* PODIUM BRACKETS */
     .rank-podium-1 {
       background: linear-gradient(90deg, rgba(255, 77, 77, 0.15) 0%, rgba(26, 30, 46, 1) 100%);
       border: 2px solid #ff4d4d;
@@ -449,15 +449,40 @@
       box-shadow: 0 0 15px rgba(255, 168, 1, 0.2);
     }
 
-    .pow-badge {
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      color: #050608;
+    /* PLAYER OF THE WEEK COIN STYLING */
+    .potw-coins-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 6px;
+    }
+
+    .potw-coin-bronze {
+      font-size: 13px;
+      color: #cd7f32;
+      filter: drop-shadow(0 0 2px rgba(205, 127, 50, 0.5));
+    }
+
+    .potw-coin-gold-shining {
+      font-size: 14px;
+      animation: pulseGoldCoin 1.2s infinite alternate;
+      cursor: help;
+    }
+
+    @keyframes pulseGoldCoin {
+      0% { filter: drop-shadow(0 0 2px #ffd700); transform: scale(1); }
+      100% { filter: drop-shadow(0 0 8px #ffd700); transform: scale(1.15); }
+    }
+
+    .badge-in-progress {
       font-size: 9px;
-      font-weight: 900;
+      font-weight: bold;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.4);
       padding: 2px 6px;
       border-radius: 4px;
       text-transform: uppercase;
-      box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
       letter-spacing: 0.5px;
     }
 
@@ -512,10 +537,7 @@
       100% { border-color: #00ff66; box-shadow: 0 0 10px #00ff66, inset 0 0 5px rgba(0,255,102,0.3); }
     }
 
-    .border-green-rgb {
-      animation: rgbBorderGreen 3s infinite linear;
-    }
-
+    .border-green-rgb { animation: rgbBorderGreen 3s infinite linear; }
     .border-green-godlike {
       box-shadow: 0 0 20px #00ff66, inset 0 0 10px rgba(0,255,102,0.5) !important;
       animation: rgbBorderGreen 2s infinite linear;
@@ -550,7 +572,7 @@
       white-space: nowrap;
     }
 
-    /* Modal Overlay Base Styling */
+    /* Modals */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -586,7 +608,7 @@
 
 <canvas id="emberCanvas"></canvas>
 
-<!-- Top Navigation Mode Selector -->
+<!-- Navigation Mode Selector -->
 <div class="nav-tabs">
   <div id="tabCursed" class="tab-btn active-cursed" onclick="switchView('cursed')">🩸 Cursed Souls Ritual</div>
   <div id="tabRank" class="tab-btn" onclick="switchView('rank')">🏆 Competitive Rank Leaderboard</div>
@@ -632,13 +654,14 @@
   </div>
 </div>
 
-<!-- VIEW 2: DEDICATED RANK LEADERBOARD VIEW -->
+<!-- VIEW 2: RANK LEADERBOARD VIEW -->
 <div id="rankView" class="rank-wrapper" style="display: none;">
   <div class="panel rank-panel">
     <div style="font-size: 18px; color: #f39c12; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; margin-bottom: 5px;">
       🏆 Global Dota 2 Rank Leaderboard
     </div>
-    <!-- Player of the Week Banner -->
+    
+    <!-- Player of the Week Status Sub-banner -->
     <div id="powBanner" style="text-align:center; margin-bottom:15px; font-size:11px; color:#ffd700;"></div>
 
     <div class="distribution-section">
@@ -658,7 +681,7 @@
   </div>
 </div>
 
-<!-- Modal 1: Individual Match Comments -->
+<!-- Modal 1: Match Comments -->
 <div id="commentModal" class="modal-overlay" style="display: none;">
   <div class="modal-content">
     <span class="modal-close" onclick="closeMatchModal()">&times;</span>
@@ -673,7 +696,7 @@
   </div>
 </div>
 
-<!-- Modal 2: View All Recent Matches -->
+<!-- Modal 2: All Matches -->
 <div id="allMatchesModal" class="modal-overlay" style="display: none;">
   <div class="modal-content" style="max-width: 600px;">
     <span class="modal-close" onclick="closeAllMatchesModal()">&times;</span>
@@ -711,7 +734,6 @@
     };
   }
 
-  // Chevron tips (caret-only without vertical lines: ▲ / ▼ / ▬)
   function getRankDeltaBadge(current, previous) {
     if (!previous || current === previous) {
       return `<div class="trend-indicator trend-none">▬ Stable<div class="trend-subtext">no shift</div></div>`;
@@ -728,28 +750,31 @@
     }
   }
 
+  // Strictly fetches RANKED ONLY (lobby_type=7) over the last 7 DAYS (date=7)
   async function getPlayerStreakState(accountId) {
     try {
-      const res = await fetch(`https://api.opendota.com/api/players/${accountId}/recentMatches`);
+      // OpenDota endpoint with strict parameters for lobby_type=7 (Ranked) and date=7 (Last 7 Days)
+      const res = await fetch(`https://api.opendota.com/api/players/${accountId}/matches?lobby_type=7&date=7`);
       const matches = await res.json();
-      if (!Array.isArray(matches) || matches.length === 0) return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
+      
+      if (!Array.isArray(matches) || matches.length === 0) {
+        return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
+      }
 
-      const rankedMatches = matches.filter(m => m.lobby_type === 7);
-      if (rankedMatches.length === 0) return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
-
-      // Calculate rolling 7-day winrate for Player of the Week
-      const oneWeekAgo = Date.now() / 1000 - 7 * 86400;
-      const recentWindow = rankedMatches.filter(m => m.start_time >= oneWeekAgo);
       let weeklyWins = 0;
-      recentWindow.forEach(m => {
-        const isR = m.player_slot < 128;
-        if ((isR && m.radiant_win) || (!isR && !m.radiant_win)) weeklyWins++;
+      matches.forEach(m => {
+        const isRadiant = m.player_slot < 128;
+        if ((isRadiant && m.radiant_win) || (!isRadiant && !m.radiant_win)) {
+          weeklyWins++;
+        }
       });
-      const winRate = recentWindow.length > 0 ? (weeklyWins / recentWindow.length) * 100 : 0;
 
+      const winRate = (weeklyWins / matches.length) * 100;
+
+      // Calculate recent win/loss streak from ranked matches
       let type = null;
       let count = 0;
-      for (const m of rankedMatches) {
+      for (const m of matches) {
         const isRadiant = m.player_slot < 128;
         const won = (isRadiant && m.radiant_win) || (!isRadiant && !m.radiant_win);
         
@@ -762,12 +787,13 @@
           break;
         }
       }
+
       return { 
         type: type || 'none', 
         count: count || 0,
         winRate,
         weeklyWins,
-        weeklyMatches: recentWindow.length
+        weeklyMatches: matches.length
       };
     } catch (e) {
       return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
@@ -977,7 +1003,7 @@
         return;
       }
       const currentRank = playerData.rank_tier || 0;
-      const { data: existing } = await db.from('cursed_players').select('*').eq('account_id', input).single();
+      const { data: existing } = await db.from('cursed_players').select('*').eq('account_id', input).maybeSingle();
 
       if (existing) {
         const prevRank = (existing.rank_tier !== currentRank) ? existing.rank_tier : existing.previous_rank_tier;
@@ -1021,16 +1047,15 @@
     uniquePlayers.sort((a, b) => (b.rank_tier || 0) - (a.rank_tier || 0));
     renderRankGraph(uniquePlayers);
 
-    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Evaluating streak & weekly win rate progression...</p>';
+    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Calculating 7-day ranked stats & standings...</p>';
 
-    // Evaluate Player of the Week metrics in parallel
     const streakMap = new Map();
     await Promise.all(uniquePlayers.map(async p => {
       const s = await getPlayerStreakState(p.account_id);
       streakMap.set(p.account_id, s);
     }));
 
-    // Determine Player of the Week (highest win rate with min 1 weekly match, tiebreaker by wins)
+    // Find current weekly ranked leader (Minimum 1 ranked match in 7 days)
     let bestPoW = null;
     uniquePlayers.forEach(p => {
       const st = streakMap.get(p.account_id);
@@ -1042,9 +1067,9 @@
     });
 
     if (bestPoW) {
-      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> <span style="color:#fff;">${bestPoW.player.persona_name}</span> (${bestPoW.winRate.toFixed(1)}% WR over ${bestPoW.weeklyMatches} ranked match${bestPoW.weeklyMatches>1?'es':''})`;
+      powBanner.innerHTML = `👑 <strong>CURRENT LEADER (LAST 7 DAYS RANKED):</strong> <span style="color:#fff;">${bestPoW.player.persona_name}</span> (${bestPoW.winRate.toFixed(1)}% WR over ${bestPoW.weeklyMatches} ranked matches)`;
     } else {
-      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> Waiting for weekly ranked sample...`;
+      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> Race in progress (No ranked matches logged this week)...`;
     }
 
     let html = '';
@@ -1054,7 +1079,6 @@
       const streakState = streakMap.get(p.account_id);
       const fx = getStreakCardEffects(streakState);
 
-      // Top 3 Podium bracket class & special tags
       let podiumClass = '';
       let rankPrefix = `#${index + 1}`;
       if (index === 0) { podiumClass = 'rank-podium-1'; rankPrefix = '👑 #1'; }
@@ -1062,8 +1086,19 @@
       else if (index === 2) { podiumClass = 'rank-podium-3'; rankPrefix = '🥉 #3'; }
 
       const isPoW = bestPoW && bestPoW.player.account_id === p.account_id;
-      const formerCoins = p.former_pow_count > 0 ? ` 🪙x${p.former_pow_count}` : '';
-      const powTag = isPoW ? ` <span class="pow-badge">⭐ PoW</span>` : '';
+      
+      // Bronze coins for former count + Gold coin if currently leading the week
+      let coinsHTML = '<div class="potw-coins-container">';
+      const formerCount = p.former_pow_count || 0;
+      for (let i = 0; i < formerCount; i++) {
+        coinsHTML += `<span class="potw-coin-bronze" title="Past Player of the Week Winner">🪙</span>`;
+      }
+      if (isPoW) {
+        coinsHTML += `<span class="potw-coin-gold-shining" title="Current Leader (7-Day Ranked)">🪙✨</span>`;
+      }
+      coinsHTML += '</div>';
+
+      const inProgressTag = isPoW ? `<span class="badge-in-progress">In Progress</span>` : '';
 
       html += `
         <div class="rank-card ${podiumClass} ${fx.cardClass}">
@@ -1072,13 +1107,16 @@
             <img src="${p.avatar_url}" class="${fx.avatarClass}" style="width:38px; height:38px; border-radius:6px; border:1px solid #2b3147;">
             <div>
               <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-size:13px; font-weight:bold; color:#fff;">${p.persona_name}${formerCoins}</span>
-                ${powTag}
+                <span style="font-size:13px; font-weight:bold; color:#fff;">${p.persona_name}</span>
+                ${inProgressTag}
                 ${fx.textBadge}
               </div>
-              <span class="medal-badge" style="background:${badgeInfo.color}22; color:${badgeInfo.color}; border:1px solid ${badgeInfo.color};">
-                ${badgeInfo.name}
-              </span>
+              <div style="display:flex; align-items:center; margin-top:2px;">
+                <span class="medal-badge" style="background:${badgeInfo.color}22; color:${badgeInfo.color}; border:1px solid ${badgeInfo.color};">
+                  ${badgeInfo.name}
+                </span>
+                ${coinsHTML}
+              </div>
             </div>
           </div>
           ${getRankDeltaBadge(p.rank_tier, p.previous_rank_tier)}
@@ -1188,25 +1226,23 @@
 
     await Promise.all(uniquePlayers.map(async (player) => {
       try {
-        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/recentMatches`);
+        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/matches?lobby_type=7&date=7`);
         const matches = await res.json();
         if (matches && Array.isArray(matches)) {
-          matches
-            .filter(m => m.lobby_type === 7)
-            .forEach(m => {
-              globalAllMatches.push({
-                ...m,
-                player_name: player.persona_name,
-                player_avatar: player.avatar_url,
-                player_id: player.account_id
-              });
+          matches.forEach(m => {
+            globalAllMatches.push({
+              ...m,
+              player_name: player.persona_name,
+              player_avatar: player.avatar_url,
+              player_id: player.account_id
             });
+          });
         }
       } catch (e) {}
     }));
 
     if (globalAllMatches.length === 0) {
-      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public ranked match histories found.</p>';
+      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No recent ranked matches found in the last 7 days.</p>';
       return;
     }
 
