@@ -711,11 +711,11 @@
   <div class="modal-content" style="max-width: 600px;">
     <span class="modal-close" onclick="closeAllMatchesModal()">&times;</span>
     <div style="font-size: 13px; font-weight: bold; color: #ff3333; text-align: center; border-bottom: 1px solid #331010; padding-bottom: 8px; margin-bottom: 12px;">
-      ⚔️ RECENT 20 CURSED MATCHES ⚔️
+      ⚔️ RECENT 20 CURSED RANKED MATCHES ⚔️
     </div>
     
     <div id="allMatchesList" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
-      <span style="color: #555; text-align: center;">Loading all recent matches...</span>
+      <span style="color: #555; text-align: center;">Loading all recent ranked matches...</span>
     </div>
   </div>
 </div>
@@ -768,9 +768,13 @@
       const matches = await res.json();
       if (!Array.isArray(matches) || matches.length === 0) return { type: 'none', count: 0 };
 
+      // Strictly filter for ranked matches (lobby_type === 7)
+      const rankedMatches = matches.filter(m => m.lobby_type === 7);
+      if (rankedMatches.length === 0) return { type: 'none', count: 0 };
+
       let type = null;
       let count = 0;
-      for (const m of matches) {
+      for (const m of rankedMatches) {
         const isRadiant = m.player_slot < 128;
         const won = (isRadiant && m.radiant_win) || (!isRadiant && !m.radiant_win);
         
@@ -1236,20 +1240,22 @@
         const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/recentMatches`);
         const matches = await res.json();
         if (matches && Array.isArray(matches)) {
-          matches.forEach(m => {
-            globalAllMatches.push({
-              ...m,
-              player_name: player.persona_name,
-              player_avatar: player.avatar_url,
-              player_id: player.account_id
+          matches
+            .filter(m => m.lobby_type === 7) // Restrict news feed to ranked only
+            .forEach(m => {
+              globalAllMatches.push({
+                ...m,
+                player_name: player.persona_name,
+                player_avatar: player.avatar_url,
+                player_id: player.account_id
+              });
             });
-          });
         }
       } catch (e) {}
     }));
 
     if (globalAllMatches.length === 0) {
-      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public match histories found.</p>';
+      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No public ranked match histories found.</p>';
       return;
     }
 
@@ -1323,7 +1329,7 @@
     const list = document.getElementById('allMatchesList');
 
     if (globalAllMatches.length === 0) {
-      list.innerHTML = '<span style="color:#666; text-align:center;">No recent matches available.</span>';
+      list.innerHTML = '<span style="color:#666; text-align:center;">No recent ranked matches available.</span>';
     } else {
       let html = '';
       for (const match of globalAllMatches.slice(0, 20)) {
