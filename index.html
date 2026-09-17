@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <title>The Ritual of the Red Card & Rank Leaderboard</title>
   
-  <!-- Cursed Dota 2 Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23050203'/><rect width='92' height='92' x='4' y='4' rx='18' fill='none' stroke='%23ff1a1a' stroke-width='3' stroke-dasharray='6,4'/><path d='M22,20 L78,80 M22,20 L35,16 L78,68 Z' fill='%23d50000' stroke='%23ff5252' stroke-width='2'/><path d='M78,20 L62,35 L38,30 Z' fill='%234a0000' stroke='%23ff1a1a' stroke-width='1.5'/><path d='M22,80 L38,65 L62,70 Z' fill='%234a0000' stroke='%23ff1a1a' stroke-width='1.5'/><circle cx='50' cy='50' r='9' fill='%23000' stroke='%23ff0000' stroke-width='2'/><circle cx='50' cy='50' r='4' fill='%23ff5252'/></svg>">
   
-  <!-- Anti-Caching Meta Tags -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -83,9 +81,7 @@
       transition: all 0.25s ease;
     }
 
-    .tab-btn:hover {
-      filter: brightness(1.2);
-    }
+    .tab-btn:hover { filter: brightness(1.2); }
 
     .tab-btn.active-cursed {
       background: linear-gradient(180deg, #3d1414 0%, #170707 100%);
@@ -308,7 +304,6 @@
       font-size: 12px;
     }
 
-    /* Animated RGB Glow for 1st Place */
     .rgb-first-place {
       position: relative;
       background: #0d050d !important;
@@ -412,17 +407,8 @@
       color: #a0aabf;
     }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .legend-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
 
     .rank-card {
       background: #1a1e2e;
@@ -436,14 +422,43 @@
       position: relative;
     }
 
-    .rank-card:hover {
-      transform: translateX(4px);
+    .rank-card:hover { transform: translateX(4px); }
+
+    /* PODIUM / TOP 3 SPECIAL HUD BRACKETS */
+    .rank-podium-1 {
+      background: linear-gradient(90deg, rgba(255, 77, 77, 0.15) 0%, rgba(26, 30, 46, 1) 100%);
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 0 20px rgba(255, 77, 77, 0.3), inset 0 0 12px rgba(255, 77, 77, 0.15);
+      position: relative;
+    }
+    .rank-podium-1::before, .rank-podium-1::after {
+      content: ''; position: absolute; width: 10px; height: 10px; border-color: #ffaa00; border-style: solid;
+    }
+    .rank-podium-1::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+    .rank-podium-1::after { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+
+    .rank-podium-2 {
+      background: linear-gradient(90deg, rgba(200, 214, 229, 0.12) 0%, rgba(26, 30, 46, 1) 100%);
+      border: 1.5px solid #c8d6e5;
+      box-shadow: 0 0 15px rgba(200, 214, 229, 0.2);
     }
 
-    .podium-1 {
-      border-color: rgba(255, 77, 77, 0.5);
-      background: linear-gradient(90deg, #251822 0%, #1a1e2e 100%);
-      box-shadow: 0 0 12px rgba(255, 77, 77, 0.15);
+    .rank-podium-3 {
+      background: linear-gradient(90deg, rgba(255, 168, 1, 0.12) 0%, rgba(26, 30, 46, 1) 100%);
+      border: 1.5px solid #ffa801;
+      box-shadow: 0 0 15px rgba(255, 168, 1, 0.2);
+    }
+
+    .pow-badge {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #050608;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+      letter-spacing: 0.5px;
     }
 
     .medal-badge {
@@ -473,7 +488,6 @@
       margin-top: 2px;
     }
 
-    /* Inside card space illumination/fill tints */
     .fill-win-light {
       background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%) !important;
       box-shadow: inset 0 0 15px rgba(255,255,255,0.08);
@@ -491,7 +505,6 @@
       background: linear-gradient(90deg, rgba(50,5,15,0.9) 0%, rgba(10,11,18,1) 100%) !important;
     }
 
-    /* Green Winstreak / RGB Running Border Styles */
     @keyframes rgbBorderGreen {
       0% { border-color: #00ff66; box-shadow: 0 0 10px #00ff66, inset 0 0 5px rgba(0,255,102,0.3); }
       33% { border-color: #00ffff; box-shadow: 0 0 10px #00ffff, inset 0 0 5px rgba(0,255,255,0.3); }
@@ -500,46 +513,30 @@
     }
 
     .border-green-rgb {
-      border: 2px solid #00ff66 !important;
       animation: rgbBorderGreen 3s infinite linear;
     }
 
     .border-green-godlike {
-      border: 2px solid #00ff66 !important;
       box-shadow: 0 0 20px #00ff66, inset 0 0 10px rgba(0,255,102,0.5) !important;
       animation: rgbBorderGreen 2s infinite linear;
     }
 
-    /* Red Losstreak / RGB Running Border & Glitch Styles */
     @keyframes rgbBorderRed {
       0% { border-color: #ff0033; box-shadow: 0 0 10px #ff0033, inset 0 0 5px rgba(255,0,51,0.3); }
       50% { border-color: #ff3300; box-shadow: 0 0 15px #ff3300, inset 0 0 8px rgba(255,51,0,0.4); }
       100% { border-color: #ff0033; box-shadow: 0 0 10px #ff0033, inset 0 0 5px rgba(255,0,51,0.3); }
     }
 
-    .border-red-rgb {
-      border: 2px solid #ff0033 !important;
-      animation: rgbBorderRed 2.5s infinite linear;
-    }
-
-    .dark-glitch-mild {
-      filter: brightness(0.9);
-    }
-
+    .border-red-rgb { animation: rgbBorderRed 2.5s infinite linear; }
+    .dark-glitch-mild { filter: brightness(0.9); }
     .dark-glitch-deep {
       filter: brightness(0.75) contrast(1.1);
       box-shadow: 0 0 25px rgba(255, 0, 0, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.9) !important;
-      border: 2px solid #ff0033 !important;
       animation: rgbBorderRed 1.5s infinite linear;
     }
 
-    .glitch-avatar {
-      filter: grayscale(0.5) contrast(1.2);
-    }
-    
-    .deep-glitch-avatar {
-      filter: grayscale(0.9) brightness(0.6) contrast(1.4);
-    }
+    .glitch-avatar { filter: grayscale(0.5) contrast(1.2); }
+    .deep-glitch-avatar { filter: grayscale(0.9) brightness(0.6) contrast(1.4); }
 
     .streak-text-badge {
       display: inline-flex;
@@ -556,15 +553,10 @@
     /* Modal Overlay Base Styling */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(4px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
     }
 
     #allMatchesModal { z-index: 1000 !important; }
@@ -575,23 +567,14 @@
       border: 1px solid #e53935;
       box-shadow: 0 0 30px rgba(229, 57, 53, 0.5);
       border-radius: 10px;
-      width: 90%;
-      max-width: 520px;
-      padding: 20px;
-      position: relative;
-      box-sizing: border-box;
+      width: 90%; max-width: 520px;
+      padding: 20px; position: relative; box-sizing: border-box;
     }
 
     .modal-close {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-      color: #888;
-      font-size: 20px;
-      cursor: pointer;
-      font-weight: bold;
+      position: absolute; top: 10px; right: 14px;
+      color: #888; font-size: 20px; cursor: pointer; font-weight: bold;
     }
-
     .modal-close:hover { color: #ff5252; }
 
     ::-webkit-scrollbar { width: 5px; }
@@ -611,45 +594,36 @@
 
 <!-- VIEW 1: CURSED SOULS (Ritual View) -->
 <div id="cursedView" class="wrapper">
-  <!-- Left Panel: Chant Wall -->
   <div class="panel">
     <div class="panel-title">📜 DARK CHANT WALL 📜</div>
-    
     <input type="text" id="commentUser" placeholder="Your Handle (Optional)" maxlength="20" style="margin-bottom: 6px;">
     <textarea id="commentMsg" placeholder="Inscribe your curse or chant..." rows="3" style="resize: none;"></textarea>
     <button onclick="postComment()">Inscribe Chant</button>
-
     <div id="commentList" class="comment-list">
       <p style="color: #666; font-size: 11px; text-align: center;">Fetching chants...</p>
     </div>
   </div>
 
-  <!-- Middle Panel: Main Hex Ritual & Recent Matches -->
   <div class="panel">
     <h1>The Hex of the Ancient</h1>
     <div class="intro">
       <p>May the Ancients turn their backs upon the chosen foolish soul. By invoking this dark rite, you seal their matchmaking fate into eternal torment—destining their queue to endless red match histories.</p>
     </div>
-
     <label for="targetInput">Enter Numeric Steam Account ID</label>
     <input type="text" id="targetInput" placeholder="Numbers only (e.g. 118471138)" oninput="cleanInput(this)" style="text-align: center;">
     <button id="hexBtn" onclick="castHex()">Begin the Ritual</button>
-
     <div id="resultBox" style="display:none; margin-top:15px; padding:12px; background:#050507; border:1px solid #8e0000; border-radius:8px;"></div>
-
     <div id="feedBox" style="margin-top:20px; border-top:1px solid #2a1010; padding-top:12px;">
       <div class="panel-title" style="margin-bottom: 8px;">👁️ LIVE CURSE MATCH FEED 👁️</div>
       <div id="curseFeedList" class="feed-container">
         <p style="color: #666; font-size: 11px; text-align: center;">Scanning the ether for match updates...</p>
       </div>
-      
       <button onclick="openAllMatchesModal()" class="btn-secondary" style="margin-top: 10px; font-size: 11px; padding: 8px;">
         🔍 VIEW ALL RECENT MATCHES (TOP 20)
       </button>
     </div>
   </div>
 
-  <!-- Right Panel: Leaderboard -->
   <div class="panel flaming-panel">
     <div class="panel-title">🔥 MOST CURSED SOULS 🔥</div>
     <div id="soulList" class="soul-list">
@@ -661,28 +635,23 @@
 <!-- VIEW 2: DEDICATED RANK LEADERBOARD VIEW -->
 <div id="rankView" class="rank-wrapper" style="display: none;">
   <div class="panel rank-panel">
-    <div style="font-size: 18px; color: #f39c12; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; margin-bottom: 15px;">
+    <div style="font-size: 18px; color: #f39c12; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; margin-bottom: 5px;">
       🏆 Global Dota 2 Rank Leaderboard
     </div>
+    <!-- Player of the Week Banner -->
+    <div id="powBanner" style="text-align:center; margin-bottom:15px; font-size:11px; color:#ffd700;"></div>
 
-    <!-- Rank Distribution Chart -->
     <div class="distribution-section">
       <div class="graph-title">Community Rank Spread</div>
-      <div id="rankGraphBar" class="graph-bar">
-        <!-- Dynamic Segments -->
-      </div>
-      <div id="rankGraphLegend" class="graph-legend">
-        <!-- Dynamic Legend -->
-      </div>
+      <div id="rankGraphBar" class="graph-bar"></div>
+      <div id="rankGraphLegend" class="graph-legend"></div>
     </div>
 
-    <!-- Add/Update Player for Rank Tracking -->
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
       <input type="text" id="rankPlayerInput" class="rank-input" placeholder="Enter Steam Account ID to Track Rank..." oninput="cleanInput(this)">
       <button id="trackRankBtn" class="btn-rank" style="width: auto; padding: 0 20px;" onclick="trackRankPlayer()">Track Rank</button>
     </div>
 
-    <!-- List of Tracked Rank Players -->
     <div id="rankLeaderboardList" style="display: flex; flex-direction: column; gap: 10px;">
       <p style="color: #666; font-size: 11px; text-align: center;">Loading competitive ladder...</p>
     </div>
@@ -694,11 +663,9 @@
   <div class="modal-content">
     <span class="modal-close" onclick="closeMatchModal()">&times;</span>
     <div id="modalHeader" style="margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px;"></div>
-    
     <div id="modalCommentsList" style="max-height: 200px; overflow-y: auto; font-size: 11px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
       <span style="color: #555;">Loading chants...</span>
     </div>
-
     <div style="display: flex; gap: 6px;">
       <input type="text" id="modalInput" placeholder="Leave a match chant..." style="flex: 1; padding: 6px 10px; font-size: 11px;">
       <button onclick="submitModalComment()" style="width: auto; padding: 6px 14px; margin: 0; font-size: 10px;">Send</button>
@@ -713,7 +680,6 @@
     <div style="font-size: 13px; font-weight: bold; color: #ff3333; text-align: center; border-bottom: 1px solid #331010; padding-bottom: 8px; margin-bottom: 12px;">
       ⚔️ RECENT 20 CURSED RANKED MATCHES ⚔️
     </div>
-    
     <div id="allMatchesList" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
       <span style="color: #555; text-align: center;">Loading all recent ranked matches...</span>
     </div>
@@ -730,7 +696,6 @@
   let heroDict = {};
   let globalAllMatches = [];
 
-  // Helper function for Rank Tier formatting
   function getRankBadgeInfo(tier) {
     if (!tier || tier === 0) return { name: "Unranked", color: "#7f8c8d" };
     if (tier === 80) return { name: "Immortal 🏆", color: "#ff4d4d" };
@@ -746,19 +711,20 @@
     };
   }
 
+  // Chevron tips (caret-only without vertical lines: ▲ / ▼ / ▬)
   function getRankDeltaBadge(current, previous) {
     if (!previous || current === previous) {
-      return `<div class="trend-indicator trend-none">⚪ No Change<div class="trend-subtext">stable</div></div>`;
+      return `<div class="trend-indicator trend-none">▬ Stable<div class="trend-subtext">no shift</div></div>`;
     }
     if (previous === 0 && current > 0) {
-      return `<div class="trend-indicator" style="color:#00d8d8;">✨ Calibrated<div class="trend-subtext">new calibration</div></div>`;
+      return `<div class="trend-indicator" style="color:#00d8d8;">▲ Calibrated<div class="trend-subtext">new placement</div></div>`;
     }
 
     const diff = current - previous;
     if (diff > 0) {
-      return `<div class="trend-indicator trend-up">🟢 +${diff} Star${diff > 1 ? 's' : ''}<div class="trend-subtext">ranked up</div></div>`;
+      return `<div class="trend-indicator trend-up">▲ +${diff} Star${diff > 1 ? 's' : ''}<div class="trend-subtext">ascended</div></div>`;
     } else {
-      return `<div class="trend-indicator trend-down">🔴 ${diff} Star${Math.abs(diff) > 1 ? 's' : ''}<div class="trend-subtext">de-ranked</div></div>`;
+      return `<div class="trend-indicator trend-down">▼ ${diff} Star${Math.abs(diff) > 1 ? 's' : ''}<div class="trend-subtext">dethroned</div></div>`;
     }
   }
 
@@ -766,11 +732,20 @@
     try {
       const res = await fetch(`https://api.opendota.com/api/players/${accountId}/recentMatches`);
       const matches = await res.json();
-      if (!Array.isArray(matches) || matches.length === 0) return { type: 'none', count: 0 };
+      if (!Array.isArray(matches) || matches.length === 0) return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
 
-      // Strictly filter for ranked matches (lobby_type === 7)
       const rankedMatches = matches.filter(m => m.lobby_type === 7);
-      if (rankedMatches.length === 0) return { type: 'none', count: 0 };
+      if (rankedMatches.length === 0) return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
+
+      // Calculate rolling 7-day winrate for Player of the Week
+      const oneWeekAgo = Date.now() / 1000 - 7 * 86400;
+      const recentWindow = rankedMatches.filter(m => m.start_time >= oneWeekAgo);
+      let weeklyWins = 0;
+      recentWindow.forEach(m => {
+        const isR = m.player_slot < 128;
+        if ((isR && m.radiant_win) || (!isR && !m.radiant_win)) weeklyWins++;
+      });
+      const winRate = recentWindow.length > 0 ? (weeklyWins / recentWindow.length) * 100 : 0;
 
       let type = null;
       let count = 0;
@@ -787,9 +762,15 @@
           break;
         }
       }
-      return { type: type || 'none', count: count || 0 };
+      return { 
+        type: type || 'none', 
+        count: count || 0,
+        winRate,
+        weeklyWins,
+        weeklyMatches: recentWindow.length
+      };
     } catch (e) {
-      return { type: 'none', count: 0 };
+      return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
     }
   }
 
@@ -797,44 +778,20 @@
     if (streakState.type === 'win') {
       const w = streakState.count;
       if (w >= 10) {
-        return {
-          cardClass: 'border-green-godlike fill-win-godlike',
-          avatarClass: '',
-          textBadge: `<span class="streak-text-badge" style="color: #00ff66; text-shadow: 0 0 8px #00ff66;">streak x${w}</span>`
-        };
+        return { cardClass: 'border-green-godlike fill-win-godlike', avatarClass: '', textBadge: `<span class="streak-text-badge" style="color: #00ff66; text-shadow: 0 0 8px #00ff66;">streak x${w}</span>` };
       } else if (w >= 5) {
-        return {
-          cardClass: 'border-green-rgb fill-win-rgb',
-          avatarClass: '',
-          textBadge: `<span class="streak-text-badge" style="color: #66ff88; text-shadow: 0 0 6px #00ff66;">streak x${w}</span>`
-        };
+        return { cardClass: 'border-green-rgb fill-win-rgb', avatarClass: '', textBadge: `<span class="streak-text-badge" style="color: #66ff88; text-shadow: 0 0 6px #00ff66;">streak x${w}</span>` };
       } else if (w >= 3) {
-        return {
-          cardClass: 'fill-win-light',
-          avatarClass: '',
-          textBadge: `<span class="streak-text-badge" style="color: #ffffff; text-shadow: 0 0 8px #ffffff;">streak x${w}</span>`
-        };
+        return { cardClass: 'fill-win-light', avatarClass: '', textBadge: `<span class="streak-text-badge" style="color: #ffffff; text-shadow: 0 0 8px #ffffff;">streak x${w}</span>` };
       }
     } else if (streakState.type === 'loss') {
       const l = streakState.count;
       if (l >= 10) {
-        return {
-          cardClass: 'dark-glitch-deep fill-loss-deep',
-          avatarClass: 'deep-glitch-avatar',
-          textBadge: `<span class="streak-text-badge" style="color: #ff3355; text-shadow: 0 0 10px #ff0033;">streak x${l}</span>`
-        };
+        return { cardClass: 'dark-glitch-deep fill-loss-deep', avatarClass: 'deep-glitch-avatar', textBadge: `<span class="streak-text-badge" style="color: #ff3355; text-shadow: 0 0 10px #ff0033;">streak x${l}</span>` };
       } else if (l >= 5) {
-        return {
-          cardClass: 'border-red-rgb fill-loss-mild',
-          avatarClass: 'glitch-avatar',
-          textBadge: `<span class="streak-text-badge" style="color: #ff6688; text-shadow: 0 0 6px #ff0033;">streak x${l}</span>`
-        };
+        return { cardClass: 'border-red-rgb fill-loss-mild', avatarClass: 'glitch-avatar', textBadge: `<span class="streak-text-badge" style="color: #ff6688; text-shadow: 0 0 6px #ff0033;">streak x${l}</span>` };
       } else if (l >= 3) {
-        return {
-          cardClass: 'fill-loss-mild dark-glitch-mild',
-          avatarClass: 'glitch-avatar',
-          textBadge: `<span class="streak-text-badge" style="color: #a0a6b8;">streak x${l}</span>`
-        };
+        return { cardClass: 'fill-loss-mild dark-glitch-mild', avatarClass: 'glitch-avatar', textBadge: `<span class="streak-text-badge" style="color: #a0a6b8;">streak x${l}</span>` };
       }
     }
     return { cardClass: '', avatarClass: '', textBadge: '' };
@@ -930,9 +887,7 @@
   async function postComment() {
     const user = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
     const msg = document.getElementById('commentMsg').value.trim();
-
     if (!msg) { alert("Inscribe a message before submitting!"); return; }
-
     await db.from('curse_comments').insert([{ username: user, message: msg }]);
     document.getElementById('commentMsg').value = '';
     fetchComments();
@@ -941,34 +896,26 @@
   async function fetchComments() {
     const box = document.getElementById('commentList');
     const { data } = await db.from('curse_comments').select('*').order('created_at', { ascending: false }).limit(15);
-    
     if (!data || data.length === 0) {
       box.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No chants yet. Be the first!</p>';
       return;
     }
-
-    let html = '';
-    data.forEach(c => {
-      html += `
-        <div class="comment-card">
-          <div class="comment-user">☠️ ${c.username}</div>
-          <div class="comment-text">${c.message}</div>
-        </div>
-      `;
-    });
-    box.innerHTML = html;
+    box.innerHTML = data.map(c => `
+      <div class="comment-card">
+        <div class="comment-user">☠️ ${c.username}</div>
+        <div class="comment-text">${c.message}</div>
+      </div>
+    `).join('');
   }
 
   async function castHex() {
     playRitualAudio();
-    
     const input = document.getElementById('targetInput').value.trim();
     const resultBox = document.getElementById('resultBox');
     const feedBox = document.getElementById('feedBox');
     const btn = document.getElementById('hexBtn');
 
     if (!input) { alert("Please enter a valid numeric Steam Account ID!"); return; }
-
     btn.innerText = "COMMUNING WITH ANCIENTS...";
     btn.disabled = true;
     currentAccountId = input;
@@ -976,32 +923,24 @@
     try {
       const playerRes = await fetch(`https://api.opendota.com/api/players/${currentAccountId}`);
       const playerData = await playerRes.json();
-      
       if (!playerData || !playerData.profile) {
         alert("Account ID not found on Valve Network!");
-        btn.innerText = "BEGIN THE RITUAL";
-        btn.disabled = false;
+        btn.innerText = "BEGIN THE RITUAL"; btn.disabled = false;
         return;
       }
-
       const personaName = playerData.profile.personaname;
       const avatarUrl = playerData.profile.avatarfull || '';
       const currentRank = playerData.rank_tier || 0;
-
       const wlRes = await fetch(`https://api.opendota.com/api/players/${currentAccountId}/wl`);
       const wlData = await wlRes.json();
 
       await db.from('cursed_players').insert([{ 
-        account_id: currentAccountId, 
-        persona_name: personaName, 
-        avatar_url: avatarUrl,
-        rank_tier: currentRank,
-        previous_rank_tier: currentRank
+        account_id: currentAccountId, persona_name: personaName, avatar_url: avatarUrl,
+        rank_tier: currentRank, previous_rank_tier: currentRank
       }]);
 
       fetchCursedSouls();
       fetchCurseMatchFeed();
-
       feedBox.style.display = 'none';
 
       resultBox.style.display = 'block';
@@ -1019,33 +958,24 @@
           <button onclick="clearTarget()" style="margin:0; background:#3d1414; border:1px solid #7f0000; font-size:10px;">CLEAR TARGET</button>
         </div>
       `;
-    } catch (e) {
-      alert("Error contacting database.");
-    }
-
-    btn.innerText = "BEGIN THE RITUAL";
-    btn.disabled = false;
+    } catch (e) { alert("Error contacting database."); }
+    btn.innerText = "BEGIN THE RITUAL"; btn.disabled = false;
   }
 
   async function trackRankPlayer() {
     const input = document.getElementById('rankPlayerInput').value.trim();
     const btn = document.getElementById('trackRankBtn');
     if (!input) { alert("Please enter a numeric Steam Account ID!"); return; }
-
-    btn.innerText = "TRACKING...";
-    btn.disabled = true;
+    btn.innerText = "TRACKING..."; btn.disabled = true;
 
     try {
       const res = await fetch(`https://api.opendota.com/api/players/${input}`);
       const playerData = await res.json();
-
       if (!playerData || !playerData.profile) {
         alert("Account ID not found!");
-        btn.innerText = "TRACK RANK";
-        btn.disabled = false;
+        btn.innerText = "TRACK RANK"; btn.disabled = false;
         return;
       }
-
       const currentRank = playerData.rank_tier || 0;
       const { data: existing } = await db.from('cursed_players').select('*').eq('account_id', input).single();
 
@@ -1054,34 +984,24 @@
         await db.from('cursed_players').update({
           persona_name: playerData.profile.personaname,
           avatar_url: playerData.profile.avatarfull,
-          rank_tier: currentRank,
-          previous_rank_tier: prevRank,
-          tracked_for_rank: true,
-          last_rank_updated_at: new Date()
+          rank_tier: currentRank, previous_rank_tier: prevRank, tracked_for_rank: true
         }).eq('account_id', input);
       } else {
         await db.from('cursed_players').insert([{
-          account_id: input,
-          persona_name: playerData.profile.personaname,
-          avatar_url: playerData.profile.avatarfull,
-          rank_tier: currentRank,
-          previous_rank_tier: currentRank,
-          tracked_for_rank: true
+          account_id: input, persona_name: playerData.profile.personaname,
+          avatar_url: playerData.profile.avatarfull, rank_tier: currentRank,
+          previous_rank_tier: currentRank, tracked_for_rank: true
         }]);
       }
-
       document.getElementById('rankPlayerInput').value = '';
       fetchRankLeaderboard();
-    } catch (e) {
-      alert("Error adding player for rank tracking.");
-    }
-
-    btn.innerText = "TRACK RANK";
-    btn.disabled = false;
+    } catch (e) { alert("Error adding player for rank tracking."); }
+    btn.innerText = "TRACK RANK"; btn.disabled = false;
   }
 
   async function fetchRankLeaderboard() {
     const list = document.getElementById('rankLeaderboardList');
+    const powBanner = document.getElementById('powBanner');
     const { data: players } = await db.from('cursed_players').select('*').or('tracked_for_rank.eq.true,rank_tier.gt.0');
 
     if (!players || players.length === 0) {
@@ -1099,29 +1019,61 @@
 
     const uniquePlayers = Array.from(playerMap.values());
     uniquePlayers.sort((a, b) => (b.rank_tier || 0) - (a.rank_tier || 0));
-
     renderRankGraph(uniquePlayers);
 
-    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Evaluating streak progression...</p>';
+    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Evaluating streak & weekly win rate progression...</p>';
+
+    // Evaluate Player of the Week metrics in parallel
+    const streakMap = new Map();
+    await Promise.all(uniquePlayers.map(async p => {
+      const s = await getPlayerStreakState(p.account_id);
+      streakMap.set(p.account_id, s);
+    }));
+
+    // Determine Player of the Week (highest win rate with min 1 weekly match, tiebreaker by wins)
+    let bestPoW = null;
+    uniquePlayers.forEach(p => {
+      const st = streakMap.get(p.account_id);
+      if (st.weeklyMatches >= 1) {
+        if (!bestPoW || st.winRate > bestPoW.winRate || (st.winRate === bestPoW.winRate && st.weeklyWins > bestPoW.weeklyWins)) {
+          bestPoW = { player: p, ...st };
+        }
+      }
+    });
+
+    if (bestPoW) {
+      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> <span style="color:#fff;">${bestPoW.player.persona_name}</span> (${bestPoW.winRate.toFixed(1)}% WR over ${bestPoW.weeklyMatches} ranked match${bestPoW.weeklyMatches>1?'es':''})`;
+    } else {
+      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> Waiting for weekly ranked sample...`;
+    }
 
     let html = '';
     for (let index = 0; index < uniquePlayers.length; index++) {
       const p = uniquePlayers[index];
-      const isFirst = index === 0;
       const badgeInfo = getRankBadgeInfo(p.rank_tier);
-      const podiumClass = isFirst ? 'podium-1' : '';
-      
-      const streakState = await getPlayerStreakState(p.account_id);
+      const streakState = streakMap.get(p.account_id);
       const fx = getStreakCardEffects(streakState);
+
+      // Top 3 Podium bracket class & special tags
+      let podiumClass = '';
+      let rankPrefix = `#${index + 1}`;
+      if (index === 0) { podiumClass = 'rank-podium-1'; rankPrefix = '👑 #1'; }
+      else if (index === 1) { podiumClass = 'rank-podium-2'; rankPrefix = '🥈 #2'; }
+      else if (index === 2) { podiumClass = 'rank-podium-3'; rankPrefix = '🥉 #3'; }
+
+      const isPoW = bestPoW && bestPoW.player.account_id === p.account_id;
+      const formerCoins = p.former_pow_count > 0 ? ` 🪙x${p.former_pow_count}` : '';
+      const powTag = isPoW ? ` <span class="pow-badge">⭐ PoW</span>` : '';
 
       html += `
         <div class="rank-card ${podiumClass} ${fx.cardClass}">
-          <div style="font-size:14px; font-weight:bold; color:${isFirst ? '#f39c12' : '#5d678a'}; width:28px;">#${index + 1}</div>
+          <div style="font-size:12px; font-weight:bold; color:${index===0?'#ff4d4d':'#5d678a'}; width:36px;">${rankPrefix}</div>
           <div style="display:flex; align-items:center; gap:12px; flex:1;">
             <img src="${p.avatar_url}" class="${fx.avatarClass}" style="width:38px; height:38px; border-radius:6px; border:1px solid #2b3147;">
             <div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:13px; font-weight:bold; color:#fff;">${p.persona_name}</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:13px; font-weight:bold; color:#fff;">${p.persona_name}${formerCoins}</span>
+                ${powTag}
                 ${fx.textBadge}
               </div>
               <span class="medal-badge" style="background:${badgeInfo.color}22; color:${badgeInfo.color}; border:1px solid ${badgeInfo.color};">
@@ -1180,8 +1132,7 @@
   }
 
   function toggleFeed(showFeed) {
-    const feedBox = document.getElementById('feedBox');
-    feedBox.style.display = showFeed ? 'block' : 'none';
+    document.getElementById('feedBox').style.display = showFeed ? 'block' : 'none';
   }
 
   function clearTarget() {
@@ -1241,7 +1192,7 @@
         const matches = await res.json();
         if (matches && Array.isArray(matches)) {
           matches
-            .filter(m => m.lobby_type === 7) // Restrict news feed to ranked only
+            .filter(m => m.lobby_type === 7)
             .forEach(m => {
               globalAllMatches.push({
                 ...m,
@@ -1260,12 +1211,10 @@
     }
 
     globalAllMatches.sort((a, b) => b.start_time - a.start_time);
-
     let html = '';
     for (const match of globalAllMatches.slice(0, 5)) {
       html += renderMatchCardHTML(match);
     }
-
     feedList.innerHTML = html;
   }
 
@@ -1285,7 +1234,6 @@
 
     list.innerHTML = '<span style="color: #555;">Loading chants...</span>';
     modal.style.display = 'flex';
-
     await loadModalComments(matchId);
   }
 
@@ -1312,11 +1260,9 @@
 
   async function submitModalComment() {
     if (!activeMatchId) return;
-
     const input = document.getElementById('modalInput');
     const text = input.value.trim();
     if (!text) return;
-
     const username = document.getElementById('commentUser').value.trim() || 'Anonymous Hexer';
 
     await db.from('match_comments').insert([{ match_id: String(activeMatchId), username: username, comment: text }]);
@@ -1327,7 +1273,6 @@
   function openAllMatchesModal() {
     const modal = document.getElementById('allMatchesModal');
     const list = document.getElementById('allMatchesList');
-
     if (globalAllMatches.length === 0) {
       list.innerHTML = '<span style="color:#666; text-align:center;">No recent ranked matches available.</span>';
     } else {
@@ -1337,7 +1282,6 @@
       }
       list.innerHTML = html;
     }
-
     modal.style.display = 'flex';
   }
 
@@ -1360,7 +1304,6 @@
     });
 
     const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-
     let html = '';
     sortedIds.forEach((id, index) => {
       const p = profiles[id];
