@@ -453,14 +453,22 @@
     .potw-coins-container {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 6px;
       margin-left: 6px;
     }
 
-    .potw-coin-bronze {
-      font-size: 13px;
+    .potw-counter-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: bold;
       color: #cd7f32;
-      filter: drop-shadow(0 0 2px rgba(205, 127, 50, 0.5));
+      background: rgba(205, 127, 50, 0.15);
+      border: 1px solid rgba(205, 127, 50, 0.4);
+      padding: 1px 7px;
+      border-radius: 10px;
+      filter: drop-shadow(0 0 2px rgba(205, 127, 50, 0.3));
     }
 
     .potw-coin-gold-shining {
@@ -661,6 +669,9 @@
       🏆 Global Dota 2 Rank Leaderboard
     </div>
     
+    <!-- Active Mon–Sun PHT Window Sub-banner -->
+    <div id="windowSubtext" style="text-align:center; margin-bottom:8px; font-size:10px; color:#7a829e; letter-spacing:0.8px;"></div>
+
     <!-- Player of the Week Status Sub-banner -->
     <div id="powBanner" style="text-align:center; margin-bottom:15px; font-size:11px; color:#ffd700;"></div>
 
@@ -719,6 +730,26 @@
   let heroDict = {};
   let globalAllMatches = [];
 
+  // Helper: Get current active Mon 00:00:00 to Sun 23:59:59 epoch bounds in PHT (UTC+8)
+  function getCurrentPHTWindow() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const pht = new Date(utc + (3600000 * 8));
+    
+    let day = pht.getDay(); // 0 is Sun, 1 is Mon...
+    let diff = day === 0 ? -6 : 1 - day;
+    
+    pht.setDate(pht.getDate() + diff);
+    pht.setHours(0, 0, 0, 0);
+    const startTs = Math.floor(pht.getTime() / 1000);
+    const endTs = startTs + (7 * 86400) - 1; // End of Sunday 23:59:59 PHT
+
+    const startDateStr = new Date(startTs * 1000).toLocaleDateString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' });
+    const endDateStr = new Date((endTs + 1) * 1000).toLocaleDateString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric' });
+
+    return { startTs, endTs, startDateStr, endDateStr };
+  }
+
   function getRankBadgeInfo(tier) {
     if (!tier || tier === 0) return { name: "Unranked", color: "#7f8c8d" };
     if (tier === 80) return { name: "Immortal 🏆", color: "#ff4d4d" };
@@ -750,14 +781,20 @@
     }
   }
 
-  // Strictly fetches RANKED ONLY (lobby_type=7) over the last 7 DAYS (date=7)
+  // Strictly fetches RANKED ONLY (lobby_type=7) within the active Mon-Sun PHT window
   async function getPlayerStreakState(accountId) {
+    const { startTs, endTs } = getCurrentPHTWindow();
     try {
-      // OpenDota endpoint with strict parameters for lobby_type=7 (Ranked) and date=7 (Last 7 Days)
-      const res = await fetch(`https://api.opendota.com/api/players/${accountId}/matches?lobby_type=7&date=7`);
-      const matches = await res.json();
+      const res = await fetch(`https://api.opendota.com/api/players/${accountId}/matches?lobby_type=7&limit=100`);
+      const allMatches = await res.json();
       
-      if (!Array.isArray(matches) || matches.length === 0) {
+      if (!Array.isArray(allMatches) || allMatches.length === 0) {
+        return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
+      }
+
+      const matches = allMatches.filter(m => m.start_time >= startTs && m.start_time <= endTs && m.lobby_type === 7);
+
+      if (matches.length === 0) {
         return { type: 'none', count: 0, winRate: 0, weeklyWins: 0, weeklyMatches: 0 };
       }
 
@@ -771,7 +808,6 @@
 
       const winRate = (weeklyWins / matches.length) * 100;
 
-      // Calculate recent win/loss streak from ranked matches
       let type = null;
       let count = 0;
       for (const m of matches) {
@@ -1028,6 +1064,11 @@
   async function fetchRankLeaderboard() {
     const list = document.getElementById('rankLeaderboardList');
     const powBanner = document.getElementById('powBanner');
+    const windowSubtext = document.getElementById('windowSubtext');
+    
+    const windowInfo = getCurrentPHTWindow();
+    windowSubtext.innerHTML = `📅 <strong>PHT WINDOW (MON–SUN):</strong> ${windowInfo.startDateStr} — ${windowInfo.endDateStr} | ⚔️ <strong>RANKED ONLY (LOBBY 7)</strong>`;
+
     const { data: players } = await db.from('cursed_players').select('*').or('tracked_for_rank.eq.true,rank_tier.gt.0');
 
     if (!players || players.length === 0) {
@@ -1047,7 +1088,7 @@
     uniquePlayers.sort((a, b) => (b.rank_tier || 0) - (a.rank_tier || 0));
     renderRankGraph(uniquePlayers);
 
-    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Calculating 7-day ranked stats & standings...</p>';
+    list.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">Calculating Mon-Sun PHT ranked stats & standings...</p>';
 
     const streakMap = new Map();
     await Promise.all(uniquePlayers.map(async p => {
@@ -1055,21 +1096,21 @@
       streakMap.set(p.account_id, s);
     }));
 
-    // Find current weekly ranked leader (Minimum 1 ranked match in 7 days)
     let bestPoW = null;
     uniquePlayers.forEach(p => {
       const st = streakMap.get(p.account_id);
-      if (st.weeklyMatches >= 1) {
-        if (!bestPoW || st.winRate > bestPoW.winRate || (st.winRate === bestPoW.winRate && st.weeklyWins > bestPoW.weeklyWins)) {
-          bestPoW = { player: p, ...st };
+      if (st.weeklyMatches >= 10) {
+        const score = st.weeklyWins * 10 + st.winRate;
+        if (!bestPoW || score > bestPoW.score) {
+          bestPoW = { player: p, ...st, score };
         }
       }
     });
 
     if (bestPoW) {
-      powBanner.innerHTML = `👑 <strong>CURRENT LEADER (LAST 7 DAYS RANKED):</strong> <span style="color:#fff;">${bestPoW.player.persona_name}</span> (${bestPoW.winRate.toFixed(1)}% WR over ${bestPoW.weeklyMatches} ranked matches)`;
+      powBanner.innerHTML = `👑 <strong>CURRENT LEADER (10+ PHT GAMES):</strong> <span style="color:#fff;">${bestPoW.player.persona_name}</span> (${bestPoW.winRate.toFixed(1)}% WR over ${bestPoW.weeklyMatches} games)`;
     } else {
-      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> Race in progress (No ranked matches logged this week)...`;
+      powBanner.innerHTML = `👑 <strong>PLAYER OF THE WEEK:</strong> Race in progress (Requires 10+ ranked matches logged this PHT window)...`;
     }
 
     let html = '';
@@ -1087,14 +1128,13 @@
 
       const isPoW = bestPoW && bestPoW.player.account_id === p.account_id;
       
-      // Bronze coins for former count + Gold coin if currently leading the week
       let coinsHTML = '<div class="potw-coins-container">';
-      const formerCount = p.former_pow_count || 0;
-      for (let i = 0; i < formerCount; i++) {
-        coinsHTML += `<span class="potw-coin-bronze" title="Past Player of the Week Winner">🪙</span>`;
+      const formerCount = p.pow_wins || 0;
+      if (formerCount > 0) {
+        coinsHTML += `<span class="potw-counter-badge" title="Past Player of the Week Wins">🪙 ×${formerCount}</span>`;
       }
       if (isPoW) {
-        coinsHTML += `<span class="potw-coin-gold-shining" title="Current Leader (7-Day Ranked)">🪙✨</span>`;
+        coinsHTML += `<span class="potw-coin-gold-shining" title="Current Leader (PHT Weekly Ranked 10+ Games)">🪙✨</span>`;
       }
       coinsHTML += '</div>';
 
@@ -1223,13 +1263,14 @@
 
     const uniquePlayers = [...new Map(cursedPlayers.map(p => [p.account_id, p])).values()];
     globalAllMatches = [];
+    const { startTs, endTs } = getCurrentPHTWindow();
 
     await Promise.all(uniquePlayers.map(async (player) => {
       try {
-        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/matches?lobby_type=7&date=7`);
+        const res = await fetch(`https://api.opendota.com/api/players/${player.account_id}/matches?lobby_type=7&limit=50`);
         const matches = await res.json();
         if (matches && Array.isArray(matches)) {
-          matches.forEach(m => {
+          matches.filter(m => m.start_time >= startTs && m.start_time <= endTs && m.lobby_type === 7).forEach(m => {
             globalAllMatches.push({
               ...m,
               player_name: player.persona_name,
@@ -1242,7 +1283,7 @@
     }));
 
     if (globalAllMatches.length === 0) {
-      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No recent ranked matches found in the last 7 days.</p>';
+      feedList.innerHTML = '<p style="color: #666; font-size: 11px; text-align: center;">No ranked matches found in the active PHT Mon–Sun window.</p>';
       return;
     }
 
